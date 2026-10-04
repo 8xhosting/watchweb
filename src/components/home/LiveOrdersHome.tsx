@@ -9,7 +9,6 @@ import {
   generateDuration,
   randomSource,
 } from '@/lib/order-rules'
-import { BottomNav } from './BottomNav'
 import { HomeHeader } from './HomeHeader'
 import { InfoSections } from './InfoSection'
 import { LiveOrdersHeader } from './LiveOrdersHeader'
@@ -34,7 +33,7 @@ interface ApiOrder {
   source: string
 }
 
-function toUiOrder(raw: ApiOrder, enterDelay?: number): UiOrder {
+function toUiOrder(raw: ApiOrder, enterDelay?: number, enterDir: 1 | -1 = 1): UiOrder {
   return {
     id: String(raw.id),
     amount: Number(raw.amount),
@@ -43,6 +42,7 @@ function toUiOrder(raw: ApiOrder, enterDelay?: number): UiOrder {
     source: String(raw.source),
     status: 'active',
     enterDelay,
+    enterDir,
   }
 }
 
@@ -65,11 +65,14 @@ function toUiOrder(raw: ApiOrder, enterDelay?: number): UiOrder {
  */
 export function LiveOrdersHome({
   username,
+  balance,
   light,
   onToggleLight,
   onLogout,
 }: {
   username: string
+  /** wallet balance (polled centrally by AppShell) */
+  balance: number
   light: boolean
   onToggleLight: () => void
   onLogout: () => void
@@ -78,7 +81,6 @@ export function LiveOrdersHome({
 
   const [orders, setOrders] = useState<UiOrder[]>([])
   const [loading, setLoading] = useState(true)
-  const [balance, setBalance] = useState(0)
   const [sortLow, setSortLow] = useState(false)
   const [payingId, setPayingId] = useState<string | null>(null)
 
@@ -92,6 +94,8 @@ export function LiveOrdersHome({
   const aliveRef = useRef(true)
   /** alternates -1 / 1 so consecutive sold-out cards swipe opposite ways */
   const exitFlipRef = useRef<1 | -1>(1)
+  /** alternates -1 / 1 so new cards swipe IN from alternating sides */
+  const enterFlipRef = useRef<1 | -1>(1)
 
   /** tracked setTimeout — auto-cleaned on unmount, ignored if already gone */
   const later = useCallback((fn: () => void, ms: number) => {
@@ -126,7 +130,11 @@ export function LiveOrdersHome({
         const raw: ApiOrder[] | undefined = Array.isArray(data?.orders) ? data.orders : undefined
         if (!raw || raw.length === 0) throw new Error('empty payload')
         if (!cancelled) {
-          setOrders(raw.map((r, i) => toUiOrder(r, Math.min(i * 35, 700))))
+          setOrders(
+            raw.map((r, i) =>
+              toUiOrder(r, Math.min(i * 35, 700), i % 2 === 0 ? 1 : -1)
+            )
+          )
         }
       } catch {
         // Backend unavailable — client-side fallback keeps the UI alive.
@@ -143,6 +151,7 @@ export function LiveOrdersHome({
                 source: randomSource(),
                 status: 'active' as const,
                 enterDelay: Math.min(i * 35, 700),
+                enterDir: (i % 2 === 0 ? 1 : -1) as 1 | -1,
               }
             })
           )
@@ -158,8 +167,12 @@ export function LiveOrdersHome({
 
   /* ----------------------- replacement after expiry --------------------- */
 
-  const insertFresh = useCallback((fresh: UiOrder) => {
-    // replacements appear at the TOP of the list
+  const insertFresh = useCallback((freshRaw: UiOrder) => {
+    // replacements appear at the TOP of the list, swiping in from an
+    // alternating side (same motion language as the sold-out exit)
+    const enterDir = enterFlipRef.current
+    enterFlipRef.current = enterDir === 1 ? -1 : 1
+    const fresh = { ...freshRaw, enterDir }
     setOrders((prev) => (prev.some((o) => o.id === fresh.id) ? prev : [fresh, ...prev]))
   }, [])
 
@@ -308,28 +321,6 @@ export function LiveOrdersHome({
     [payingId, toast]
   )
 
-  /* ------------------------- wallet every ~5s --------------------------- */
-
-  useEffect(() => {
-    let cancelled = false
-    const load = async () => {
-      try {
-        const res = await fetch('/api/wallet', { cache: 'no-store' })
-        if (!res.ok) return
-        const data = await res.json()
-        if (!cancelled && typeof data?.balance === 'number') setBalance(data.balance)
-      } catch {
-        // keep the last known balance
-      }
-    }
-    void load()
-    const t = setInterval(load, 5000)
-    return () => {
-      cancelled = true
-      clearInterval(t)
-    }
-  }, [])
-
   /* ------------------------------ derived ------------------------------- */
 
   // Sorting is a pure reorder — same keys, same mounted cards, timers untouched.
@@ -353,7 +344,6 @@ export function LiveOrdersHome({
       <WithdrawalTicker />
       <SortBar active={sortLow} onToggle={() => setSortLow((v) => !v)} />
       <LiveOrdersHeader activeCount={activeCount} />
-
       <section aria-busy={loading} aria-label="Live orders" className="flex flex-col gap-2.5">
         {loading ? (
           Array.from({ length: 5 }, (_, i) => (
@@ -375,15 +365,6 @@ export function LiveOrdersHome({
       </section>
 
       <InfoSections />
-
-      <BottomNav
-        onPlaceholder={(tab) =>
-          toast({
-            title: 'Coming soon',
-            description: `The ${tab} screen is on its way.`,
-          })
-        }
-      />
     </div>
   )
 }

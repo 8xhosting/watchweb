@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState, type FormEvent, type ReactNode } from 'react'
 import { useToast } from '@/hooks/use-toast'
-import { LiveOrdersHome } from '@/components/home/LiveOrdersHome'
+import { AppShell, type AppView } from '@/components/app/AppShell'
 
 /* ------------------------------------------------------------------ */
 /*  Inline SVG icon set (Lucide-style strokes, zero dependencies)      */
@@ -156,7 +156,7 @@ function AmbientBackground({ light }: { light: boolean }) {
         className="absolute inset-0 transition-colors duration-700"
         style={{
           background: light
-            ? 'radial-gradient(130% 100% at 50% 0%, #FFFFFF 0%, #F1F8F3 52%, #E7F1EA 100%)'
+            ? 'radial-gradient(130% 100% at 50% 0%, #EDF3EE 0%, #E3EAE5 52%, #D6E1D9 100%)'
             : 'radial-gradient(130% 100% at 50% 0%, #0B1626 0%, #05080E 52%, #030508 100%)',
         }}
       />
@@ -498,10 +498,10 @@ const MOBILE_RE = /^\d{10}$/
 type FieldKey = 'username' | 'mobile' | 'password' | 'confirm'
 type FormValues = Record<FieldKey, string>
 type FormErrors = Partial<Record<FieldKey, string>>
-type View = 'register' | 'otp' | 'success' | 'login' | 'home'
+type View = 'register' | 'otp' | 'success' | 'login' | AppView
 
 /* ------------------------------------------------------------------ */
-/*  Hash routing — example.com/#/login, /#/register, /#/home …         */
+/*  Hash routing — example.com/#/login, /#/home, /#/team, /#/orders …   */
 /* ------------------------------------------------------------------ */
 
 const VIEW_HASH: Record<View, string> = {
@@ -510,6 +510,21 @@ const VIEW_HASH: Record<View, string> = {
   success: '#/success',
   login: '#/login',
   home: '#/home',
+  team: '#/team',
+  orders: '#/orders',
+  profile: '#/profile',
+  task: '#/task',
+  withdraw: '#/withdraw',
+}
+
+/** views that require a valid session */
+const AUTHED_VIEWS: ReadonlySet<View> = new Set([
+  'home', 'team', 'orders', 'profile', 'task', 'withdraw',
+])
+
+/** type guard — narrows View to the authenticated AppView subset */
+function isAppView(v: View): v is AppView {
+  return v === 'home' || v === 'team' || v === 'orders' || v === 'profile' || v === 'task' || v === 'withdraw'
 }
 
 function viewFromHash(hash: string): View | null {
@@ -524,6 +539,16 @@ function viewFromHash(hash: string): View | null {
       return 'login'
     case '#/home':
       return 'home'
+    case '#/team':
+      return 'team'
+    case '#/orders':
+      return 'orders'
+    case '#/profile':
+      return 'profile'
+    case '#/task':
+      return 'task'
+    case '#/withdraw':
+      return 'withdraw'
     default:
       return null
   }
@@ -615,9 +640,12 @@ export default function WatchPayAuth() {
       authedRef.current = !!username
       if (username) {
         setLoggedInUser(username)
-        setView('home')
-        if (window.location.hash !== VIEW_HASH.home) {
-          window.location.hash = VIEW_HASH.home
+        // honour deep links straight into any authed tab (team, orders…)
+        const target: View =
+          initial && AUTHED_VIEWS.has(initial) ? initial : 'home'
+        setView(target)
+        if (window.location.hash !== VIEW_HASH[target]) {
+          window.location.hash = VIEW_HASH[target]
         }
         return
       }
@@ -664,7 +692,7 @@ export default function WatchPayAuth() {
         if (window.location.hash !== fallback) window.location.hash = fallback
         return
       }
-      if (v === 'home' && !authedRef.current) {
+      if (AUTHED_VIEWS.has(v) && !authedRef.current) {
         window.location.hash = VIEW_HASH.login
         setView('login')
         return
@@ -1375,9 +1403,11 @@ export default function WatchPayAuth() {
             </AuthCard>
           )}
 
-          {/* ========================== HOME VIEW ========================== */}
-          {view === 'home' && (
-            <LiveOrdersHome
+          {/* ===================== AUTHENTICATED APP ====================== */}
+          {isAppView(view) && (
+            <AppShell
+              view={view}
+              onNavigate={setView}
               username={loggedInUser ?? 'Player'}
               light={light}
               onToggleLight={() => setLight((v) => !v)}

@@ -240,3 +240,120 @@ export const IconSmartphone = ({ className }: { className?: string }) => (
     <path d="M12 18h.01" />
   </Icon>
 )
+
+/* ------------------------------------------------------------------ */
+/*  Icons for the app pages (Team / Orders / Profile / Task / Withdraw)*/
+/* ------------------------------------------------------------------ */
+
+export const IconChevronLeft = ({ className }: { className?: string }) => (
+  <Icon className={className}>
+    <path d="m15 18-6-6 6-6" />
+  </Icon>
+)
+
+export const IconUsers = ({ className }: { className?: string }) => (
+  <Icon className={className}>
+    <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" />
+    <circle cx="9" cy="7" r="4" />
+    <path d="M22 21v-2a4 4 0 0 0-3-3.87" />
+    <path d="M16 3.13a4 4 0 0 1 0 7.75" />
+  </Icon>
+)
+
+export const IconCopy = ({ className }: { className?: string }) => (
+  <Icon className={className}>
+    <rect x="9" y="9" width="12" height="12" rx="2" ry="2" />
+    <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" />
+  </Icon>
+)
+
+export const IconShare = ({ className }: { className?: string }) => (
+  <Icon className={className}>
+    <circle cx="18" cy="5" r="3" />
+    <circle cx="6" cy="12" r="3" />
+    <circle cx="18" cy="19" r="3" />
+    <line x1="8.59" x2="15.42" y1="13.51" y2="17.49" />
+    <line x1="15.41" x2="8.59" y1="6.51" y2="10.49" />
+  </Icon>
+)
+
+export const IconCheckSquare = ({ className }: { className?: string }) => (
+  <Icon className={className}>
+    <polyline points="9 11 12 14 22 4" />
+    <path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11" />
+  </Icon>
+)
+
+export const IconArrowDownToLine = ({ className }: { className?: string }) => (
+  <Icon className={className}>
+    <path d="M12 17V3" />
+    <path d="m6 11 6 6 6-6" />
+    <path d="M19 21H5" />
+  </Icon>
+)
+
+export const IconHistory = ({ className }: { className?: string }) => (
+  <Icon className={className}>
+    <path d="M3 3v5h5" />
+    <path d="M3.05 13A9 9 0 1 0 6 5.3L3 8" />
+    <path d="M12 7v5l4 2" />
+  </Icon>
+)
+
+export const IconHeadset = ({ className }: { className?: string }) => (
+  <Icon className={className}>
+    <path d="M3 11h3a2 2 0 0 1 2 2v3a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-5a9 9 0 0 1 18 0v5a2 2 0 0 1-2 2h-1a2 2 0 0 1-2-2v-3a2 2 0 0 1 2-2h3" />
+  </Icon>
+)
+
+export const IconInfo = ({ className }: { className?: string }) => (
+  <Icon className={className}>
+    <circle cx="12" cy="12" r="10" />
+    <path d="M12 16v-4" />
+    <path d="M12 8h.01" />
+  </Icon>
+)
+
+export const IconCrown = ({ className }: { className?: string }) => (
+  <Icon className={className}>
+    <path d="M11.562 3.266a.5.5 0 0 1 .876 0L15.39 8.87a1 1 0 0 0 1.516.294L21.183 5.5a.5.5 0 0 1 .798.519l-2.834 10.246a1 1 0 0 1-.956.734H5.81a1 1 0 0 1-.957-.734L2.02 6.02a.5.5 0 0 1 .798-.519l4.276 3.664a1 1 0 0 0 1.516-.294z" />
+    <path d="M5 21h14" />
+  </Icon>
+)
+
+export const IconFilter = ({ className }: { className?: string }) => (
+  <Icon className={className}>
+    <polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3" />
+  </Icon>
+)
+
+export const IconRefresh = ({ className }: { className?: string }) => (
+  <Icon className={className}>
+    <path d="M3 12a9 9 0 0 1 15.36-6.36L21 8" />
+    <path d="M21 3v5h-5" />
+    <path d="M21 12a9 9 0 0 1-15.36 6.36L3 16" />
+    <path d="M3 21v-5h5" />
+  </Icon>
+)
+
+export const IconChevronDown = ({ className }: { className?: string }) => (
+  <Icon className={className}>
+    <path d="m6 9 6 6 6-6" />
+  </Icon>
+)
+
+export const IconPlayCircle = ({ className }: { className?: string }) => (
+  <Icon className={className}>
+    <circle cx="12" cy="12" r="10" />
+    <polygon points="10 8 16 12 10 16 10 8" />
+  </Icon>
+)
+
+export const IconWatch = ({ className }: { className?: string }) => (
+  <Icon className={className}>
+    <circle cx="12" cy="12" r="6" />
+    <polyline points="12 10 12 12 13 13" />
+    <path d="m16.13 7.66-.81-4.05a2 2 0 0 0-2-1.61h-2.68a2 2 0 0 0-2 1.61l-.78 4.05" />
+    <path d="m7.88 16.36.8 4a2 2 0 0 0 2 1.61h2.72a2 2 0 0 0 2-1.61l.81-4.05" />
+  </Icon>
+)

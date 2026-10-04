@@ -45,25 +45,25 @@
 
 :root {
   --radius: 0.625rem;
-  /* WatchPay LIGHT theme — white background, deep-green text, emerald accents */
-  --background: #f6f9f7;
-  --foreground: #0b1f17;
-  --card: #ffffff;
-  --card-foreground: #0b1f17;
-  --popover: #ffffff;
-  --popover-foreground: #0b1f17;
-  --primary: #00a86b;
+  /* WatchPay LIGHT theme — soft sage (never white), deep-green text, emerald accents */
+  --background: #e3eae5;
+  --foreground: #16241d;
+  --card: #f7faf8;
+  --card-foreground: #16241d;
+  --popover: #f7faf8;
+  --popover-foreground: #16241d;
+  --primary: #00915c;
   --primary-foreground: #ffffff;
-  --secondary: #e8f0ec;
-  --secondary-foreground: #0b1f17;
-  --muted: #edf3ef;
-  --muted-foreground: #5c6b63;
-  --accent: #e2f3ea;
+  --secondary: #d8e2db;
+  --secondary-foreground: #16241d;
+  --muted: #dde6e0;
+  --muted-foreground: #46564d;
+  --accent: #d3e4d9;
   --accent-foreground: #065f46;
   --destructive: #dc2626;
-  --border: rgba(7, 60, 45, 0.12);
-  --input: rgba(7, 60, 45, 0.14);
-  --ring: rgba(0, 168, 107, 0.45);
+  --border: rgba(10, 61, 45, 0.16);
+  --input: rgba(10, 61, 45, 0.18);
+  --ring: rgba(0, 145, 92, 0.5);
   --chart-1: oklch(0.646 0.222 41.116);
   --chart-2: oklch(0.6 0.118 184.704);
   --chart-3: oklch(0.398 0.07 227.392);
@@ -155,28 +155,29 @@
 }
 
 .wp-app.wp-light {
-  --wp-bg: #f4f8f5;
-  --wp-bg-dim: #ffffff;
-  --wp-card: rgba(255, 255, 255, 0.94);
-  --wp-card-solid: #ffffff;
-  --wp-card-raise: #ffffff;
-  --wp-input: #ffffff;
-  --wp-input-focus: #ffffff;
-  --wp-border: rgba(7, 60, 45, 0.13);
-  --wp-border-strong: rgba(7, 60, 45, 0.24);
-  --wp-text: #10241b;
-  --wp-heading: #07130d;
-  --wp-muted: #5c6b63;
-  --wp-muted-2: #8a968e;
-  --wp-faint: #9aa79e;
-  --wp-hover: rgba(6, 78, 59, 0.045);
-  --wp-chip: rgba(6, 78, 59, 0.035);
-  --wp-accent-text: #00915c;
-  --wp-accent-soft: rgba(0, 168, 107, 0.09);
-  --wp-shadow-card: 0 10px 30px -20px rgba(6, 50, 38, 0.35);
-  --wp-shadow-pop: 0 24px 60px -20px rgba(6, 50, 38, 0.3);
-  --wp-nav-bg: rgba(255, 255, 255, 0.94);
-  --wp-menu-bg: rgba(255, 255, 255, 0.98);
+  /* soft sage — never white */
+  --wp-bg: #e3eae5;
+  --wp-bg-dim: #d9e3dc;
+  --wp-card: rgba(248, 251, 249, 0.9);
+  --wp-card-solid: #f6faf7;
+  --wp-card-raise: #fbfdfc;
+  --wp-input: #edf3ef;
+  --wp-input-focus: #f8fbf9;
+  --wp-border: rgba(10, 61, 45, 0.17);
+  --wp-border-strong: rgba(10, 61, 45, 0.32);
+  --wp-text: #16241d;
+  --wp-heading: #0a1a12;
+  --wp-muted: #46564d;
+  --wp-muted-2: #64736a;
+  --wp-faint: #84938a;
+  --wp-hover: rgba(8, 68, 50, 0.07);
+  --wp-chip: rgba(8, 68, 50, 0.055);
+  --wp-accent-text: #008a57;
+  --wp-accent-soft: rgba(0, 145, 92, 0.11);
+  --wp-shadow-card: 0 14px 34px -20px rgba(9, 46, 34, 0.45), 0 2px 8px -4px rgba(9, 46, 34, 0.18);
+  --wp-shadow-pop: 0 26px 60px -22px rgba(9, 46, 34, 0.5);
+  --wp-nav-bg: rgba(233, 240, 235, 0.95);
+  --wp-menu-bg: rgba(247, 250, 248, 0.98);
   --wp-ticker-chip-fg: #ffffff;
 }
 
@@ -229,9 +230,9 @@ input:-webkit-autofill:active {
 .wp-light input:-webkit-autofill:hover,
 .wp-light input:-webkit-autofill:focus,
 .wp-light input:-webkit-autofill:active {
-  -webkit-text-fill-color: #10241b;
-  -webkit-box-shadow: 0 0 0 1000px #ffffff inset;
-  caret-color: #00a86b;
+  -webkit-text-fill-color: #16241d;
+  -webkit-box-shadow: 0 0 0 1000px #edf3ef inset;
+  caret-color: #00915c;
 }
 
 /* emerald selection + slim dark scrollbar */
@@ -342,19 +343,39 @@ input {
   );
 }
 
-/* order card entrance — fade + rise */
-@keyframes wp-order-in {
-  from {
+/* order card entrance — horizontal SWIPE (matches the sold-out exit style).
+   Direction alternates per card (random timer lifetimes make it feel organic). */
+@keyframes wp-order-in-right {
+  0% {
     opacity: 0;
-    transform: translateY(14px) scale(0.97);
+    transform: translateX(64px) rotate(2.2deg) scale(0.96);
   }
-  to {
+  55% {
+    opacity: 1;
+  }
+  100% {
     opacity: 1;
     transform: none;
   }
 }
-.wp-order-in {
-  animation: wp-order-in 0.45s cubic-bezier(0.22, 1, 0.36, 1) both;
+@keyframes wp-order-in-left {
+  0% {
+    opacity: 0;
+    transform: translateX(-64px) rotate(-2.2deg) scale(0.96);
+  }
+  55% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 1;
+    transform: none;
+  }
+}
+.wp-order-in-right {
+  animation: wp-order-in-right 0.5s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+.wp-order-in-left {
+  animation: wp-order-in-left 0.5s cubic-bezier(0.22, 1, 0.36, 1) both;
 }
 
 /* order card exit — swipe away (alternating left/right) */
@@ -471,7 +492,8 @@ input {
   .wp-shimmer {
     animation: none;
   }
-  .wp-order-in,
+  .wp-order-in-right,
+  .wp-order-in-left,
   .wp-order-out-right,
   .wp-order-out-left {
     animation-duration: 0.01s;
@@ -484,13 +506,13 @@ input {
   color: #07130d;
 }
 .wp-light ::-webkit-scrollbar-track {
-  background: #f4f8f5;
+  background: #e3eae5;
 }
 .wp-light ::-webkit-scrollbar-thumb {
-  background: #c4d4ca;
+  background: #b3c4b8;
 }
 .wp-light {
-  scrollbar-color: #c4d4ca #f4f8f5;
+  scrollbar-color: #b3c4b8 #e3eae5;
 }
 
 /* light-mode platform badge legibility: darken brand-tinted chips */

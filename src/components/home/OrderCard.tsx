@@ -16,6 +16,8 @@ export interface UiOrder {
   status: OrderStatus
   /** swipe-away direction for the exit animation (alternates per expiry) */
   exitDir?: 1 | -1
+  /** swipe-in direction for the entrance animation (alternates per arrival) */
+  enterDir?: 1 | -1
   /** entrance animation delay (initial stagger) */
   enterDelay?: number
 }
@@ -30,9 +32,11 @@ const clockText = (seconds: number) => {
 
 /**
  * One live order. Lifecycle handled by the parent engine:
- * active → (countdown 0) → soldout (red pulse ~750ms) → exit (fade/slide
- * ~420ms) → removed & replaced. Pure presentation — all timers are
- * centralised in LiveOrdersHome, so re-ordering never resets anything.
+ * active → (countdown 0) → soldout (red pulse ~750ms) → exit (swipe out
+ * ~480ms) → removed & replaced. New cards SWIPE IN horizontally
+ * (alternating direction) — same motion language as the exit.
+ * Pure presentation — all timers are centralised in LiveOrdersHome,
+ * so re-ordering never resets anything.
  *
  * Layout (per the visual reference):
  *   row 1: [logo | amount + bonus chip]            [countdown]
@@ -59,16 +63,18 @@ function OrderCardImpl({
         animationDelay:
           order.status === 'exit' || !order.enterDelay ? undefined : `${order.enterDelay}ms`,
       }}
-      className={`wp-order-in relative overflow-hidden rounded-2xl border p-3.5 pl-4 shadow-[var(--wp-shadow-card)] backdrop-blur-xl transition-colors duration-300 ${
-        soldOut
-          ? 'wp-soldout-card border-red-500/35 bg-[#160A10]/85'
-          : 'border-[var(--wp-border)] bg-[var(--wp-card)] hover:border-emerald-400/30'
-      } ${
+      className={`${
         order.status === 'exit'
           ? order.exitDir === -1
             ? 'wp-order-out-left'
             : 'wp-order-out-right'
-          : ''
+          : order.enterDir === -1
+            ? 'wp-order-in-left'
+            : 'wp-order-in-right'
+      } relative overflow-hidden rounded-2xl border p-3.5 pl-4 shadow-[var(--wp-shadow-card)] backdrop-blur-xl transition-colors duration-300 ${
+        soldOut
+          ? 'wp-soldout-card border-red-500/35 bg-[#160A10]/85'
+          : 'border-[var(--wp-border)] bg-[var(--wp-card)] hover:border-emerald-400/30'
       }`}
     >
       {/* left accent bar — platform colour, red when sold out */}

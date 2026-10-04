@@ -186,3 +186,67 @@ html {
   background: #1a2433;
   border-radius: 8px;
 }
+
+/* error shake for OTP / invalid states */
+@keyframes wp-shake {
+  10%,
+  90% {
+    transform: translateX(-1px);
+  }
+  20%,
+  80% {
+    transform: translateX(2px);
+  }
+  30%,
+  50%,
+  70% {
+    transform: translateX(-3px);
+  }
+  40%,
+  60% {
+    transform: translateX(3px);
+  }
+}
+.wp-shake {
+  animation: wp-shake 0.5s ease both;
+}
+
+/* success pop-in */
+@keyframes wp-pop {
+  0% {
+    transform: scale(0.6);
+    opacity: 0;
+  }
+  60% {
+    transform: scale(1.06);
+  }
+  100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+.wp-pop {
+  animation: wp-pop 0.45s ease-out both;
+}
+
+/* animated success check (SVG stroke draw) */
+@keyframes wp-draw {
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+.wp-check-circle {
+  stroke-dasharray: 166;
+  stroke-dashoffset: 166;
+  animation: wp-draw 0.6s ease-out forwards;
+}
+.wp-check-mark {
+  stroke-dasharray: 48;
+  stroke-dashoffset: 48;
+  animation: wp-draw 0.35s ease-out 0.55s forwards;
+}
+
+/* emerald caret for text inputs */
+input {
+  caret-color: #00d084;
+}

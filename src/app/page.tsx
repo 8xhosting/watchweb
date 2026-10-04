@@ -575,6 +575,9 @@ export default function WatchPayAuth() {
   const { toast } = useToast()
 
   const [view, setView] = useState<View>('register')
+  /** true until the session-restore check finishes — shows a splash so a
+   *  refresh never flashes the register form before Home appears */
+  const [booting, setBooting] = useState(true)
   const [light, setLight] = useState(false)
   const [showPassword, setShowPassword] = useState(false)
   const [showConfirm, setShowConfirm] = useState(false)
@@ -633,9 +636,20 @@ export default function WatchPayAuth() {
           username = data.username as string
         }
       } catch {
-        // offline / first visit — treat as guest
+        // transient network hiccup — one retry before falling back to guest
+        try {
+          await new Promise((r) => setTimeout(r, 800))
+          const res = await fetch('/api/auth/me', { cache: 'no-store' })
+          const data = await res.json()
+          if (!cancelled && res.ok && data?.authenticated && data?.username) {
+            username = data.username as string
+          }
+        } catch {
+          // offline / first visit — treat as guest
+        }
       }
       if (cancelled) return
+      setBooting(false)
 
       authedRef.current = !!username
       if (username) {
@@ -797,6 +811,9 @@ export default function WatchPayAuth() {
       }
       const name = data.user?.username ?? values.username
       setCreatedUser(name)
+      // verify-otp signed the user in (session cookie) — mirror that here
+      setLoggedInUser(name)
+      authedRef.current = true
       setView('success')
       toast({
         title: 'Account created',
@@ -849,11 +866,10 @@ export default function WatchPayAuth() {
     }
   }
 
-  function goLoginFromSuccess() {
-    setLoginValues({ mobile: values.mobile, password: '' })
-    setLoginError(null)
-    setLoggedInUser(null)
-    setView('login')
+  function goHomeFromSuccess() {
+    // the session cookie was already set by /api/auth/verify-otp —
+    // straight to Home, no forced detour through the login form
+    setView('home')
   }
 
   function goRegisterFromLogin() {
@@ -877,10 +893,25 @@ export default function WatchPayAuth() {
     >
       <AmbientBackground light={light} />
 
-      <div className="relative z-10 mx-auto flex min-h-svh w-full max-w-[430px] flex-col px-5 pb-[max(18px,env(safe-area-inset-bottom))] pt-[max(12px,env(safe-area-inset-top))]">
+      <div
+        className={`relative z-10 mx-auto flex min-h-svh w-full max-w-[430px] flex-col pb-[max(18px,env(safe-area-inset-bottom))] pt-[max(12px,env(safe-area-inset-top))] ${
+          isAppView(view) ? 'px-0' : 'px-5'
+        }`}
+      >
         <div className="my-auto">
+          {/* ========================= BOOT SPLASH ========================= */}
+          {/* shown while /api/auth/me decides register vs Home — a refresh
+              on Home therefore never flashes the register form */}
+          {booting && (
+            <div aria-busy="true" className="flex min-h-[72svh] items-center justify-center">
+              <div className="wp-pop">
+                <Logo />
+              </div>
+            </div>
+          )}
+
           {/* ============================ HEADER ============================ */}
-          {view !== 'home' && (
+          {!booting && view !== 'home' && (
             <header className="relative mb-4 flex flex-col items-center">
               <button
                 type="button"
@@ -899,7 +930,7 @@ export default function WatchPayAuth() {
           )}
 
           {/* ======================== REGISTER VIEW ======================== */}
-          {view === 'register' && (
+          {!booting && view === 'register' && (
             <AuthCard>
               <h2 className="text-center text-[25px] font-extrabold leading-tight tracking-tight text-[var(--wp-heading)]">
                 Create Your{' '}
@@ -1135,7 +1166,7 @@ export default function WatchPayAuth() {
           )}
 
           {/* ========================== OTP VIEW ========================== */}
-          {view === 'otp' && (
+          {!booting && view === 'otp' && (
             <AuthCard>
               <h2 className="text-center text-[25px] font-extrabold leading-tight tracking-tight text-[var(--wp-heading)]">
                 Verify{' '}
@@ -1209,7 +1240,7 @@ export default function WatchPayAuth() {
           )}
 
           {/* ========================= SUCCESS VIEW ========================= */}
-          {view === 'success' && (
+          {!booting && view === 'success' && (
             <AuthCard>
               <div className="flex flex-col items-center py-3">
                 <SuccessCheck />
@@ -1224,12 +1255,12 @@ export default function WatchPayAuth() {
                   <span className="font-semibold text-emerald-600 dark:text-emerald-400">{createdUser}</span>! Your
                   account is ready — start watching &amp; earning.
                 </p>
-                <button type="button" onClick={goLoginFromSuccess} className={`${primaryBtn} mt-6`}>
+                <button type="button" onClick={goHomeFromSuccess} className={`${primaryBtn} mt-6`}>
                   <span
                     aria-hidden="true"
                     className="pointer-events-none absolute inset-0 -translate-x-full bg-gradient-to-r from-transparent via-white/25 to-transparent transition-transform duration-700 group-hover:translate-x-full"
                   />
-                  <span>Continue to Login</span>
+                  <span>Continue to Home</span>
                   <IconArrowRight className="h-[18px] w-[18px] transition-transform duration-200 group-hover:translate-x-1" />
                 </button>
               </div>
@@ -1237,7 +1268,7 @@ export default function WatchPayAuth() {
           )}
 
           {/* ========================== LOGIN VIEW ========================== */}
-          {view === 'login' && (
+          {!booting && view === 'login' && (
             <AuthCard>
               {loggedInUser ? (
                 <div className="flex flex-col items-center py-3">
@@ -1404,7 +1435,7 @@ export default function WatchPayAuth() {
           )}
 
           {/* ===================== AUTHENTICATED APP ====================== */}
-          {isAppView(view) && (
+          {!booting && isAppView(view) && (
             <AppShell
               view={view}
               onNavigate={setView}

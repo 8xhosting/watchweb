@@ -51,7 +51,7 @@ export function WithdrawalTicker() {
       <div className="wp-ticker-mask relative min-w-0 flex-1 overflow-hidden py-1">
         <div
           className="wp-ticker flex w-max items-center gap-7 whitespace-nowrap"
-          style={{ animationDuration: `${Math.round(entries.length * 1.4)}s` }}
+          style={{ animationDuration: `${Math.round(entries.length * 2.4)}s` }}
         >
           {/* duplicated once so the -50% translate loop is seamless */}
           {entries.map((e, i) => renderItem(e, amounts[i], false))}

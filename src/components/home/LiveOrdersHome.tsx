@@ -51,9 +51,10 @@ function toUiOrder(raw: ApiOrder, enterDelay?: number, enterDir: 1 | -1 = 1): Ui
  *
  * ORDER LIFECYCLE (centralised engine, ONE setInterval for the whole list):
  *   active → countdown reaches 0 → SOLD OUT (red pulse, button disabled)
- *   → exit animation → card removed → replacement requested from
- *   /api/orders/replace (client-side fallback order if the API fails)
- *   → new card enters smoothly. Total live count stays ~20.
+ *   → exit animation → the replacement takes over the SAME list slot
+ *   (swipe out → swipe in, zero vertical movement) — requested from
+ *   /api/orders/replace (client-side fallback order if the API fails).
+ *   Total live count stays ~20.
  *
  * SAFETY GUARDS
  *   - expiredRef  : every order id is processed exactly once (no duplicate
@@ -167,13 +168,29 @@ export function LiveOrdersHome({
 
   /* ----------------------- replacement after expiry --------------------- */
 
-  const insertFresh = useCallback((freshRaw: UiOrder) => {
-    // replacements appear at the TOP of the list, swiping in from an
-    // alternating side (same motion language as the sold-out exit)
+  /**
+   * Place a replacement order. The fresh card takes over the EXACT slot of
+   * the expired card it replaces — the rest of the list never shifts up or
+   * down (the "jumping list" problem). If the expired card already left the
+   * list, the fresh one appends at the end (also shift-free). Either way it
+   * SWIPEs in from an alternating side, mirroring the sold-out exit motion.
+   */
+  const insertFresh = useCallback((freshRaw: UiOrder, replaceId?: string) => {
     const enterDir = enterFlipRef.current
     enterFlipRef.current = enterDir === 1 ? -1 : 1
     const fresh = { ...freshRaw, enterDir }
-    setOrders((prev) => (prev.some((o) => o.id === fresh.id) ? prev : [fresh, ...prev]))
+    setOrders((prev) => {
+      if (prev.some((o) => o.id === fresh.id)) return prev
+      if (replaceId) {
+        const idx = prev.findIndex((o) => o.id === replaceId)
+        if (idx !== -1) {
+          const next = [...prev]
+          next[idx] = fresh
+          return next
+        }
+      }
+      return [...prev, fresh]
+    })
   }, [])
 
   /**
@@ -219,7 +236,8 @@ export function LiveOrdersHome({
       if (ordersRef.current.some((o) => o.id === expiredId)) {
         pendingRef.current.set(expiredId, next)
       } else {
-        insertFresh(next)
+        // card already gone — insertFresh appends at the end (no shift)
+        insertFresh(next, expiredId)
       }
     },
     [insertFresh]
@@ -265,11 +283,15 @@ export function LiveOrdersHome({
             )
           }, SOLDOUT_MS)
           later(() => {
-            setOrders((prev) => prev.filter((x) => x.id !== o.id))
             const pending = pendingRef.current.get(o.id)
+            pendingRef.current.delete(o.id)
             if (pending) {
-              pendingRef.current.delete(o.id)
-              insertFresh(pending)
+              // swap the fresh card into the SAME slot — the list itself
+              // never moves up/down, only this card swipes out and the new
+              // one swipes in (horizontal motion only)
+              insertFresh(pending, o.id)
+            } else {
+              setOrders((prev) => prev.filter((x) => x.id !== o.id))
             }
           }, SOLDOUT_MS + EXIT_MS)
         }

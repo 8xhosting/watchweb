@@ -14,6 +14,8 @@ export interface UiOrder {
   /** seconds left; frozen while the user is paying this order */
   remaining: number
   status: OrderStatus
+  /** swipe-away direction for the exit animation (alternates per expiry) */
+  exitDir?: 1 | -1
   /** entrance animation delay (initial stagger) */
   enterDelay?: number
 }
@@ -57,11 +59,17 @@ function OrderCardImpl({
         animationDelay:
           order.status === 'exit' || !order.enterDelay ? undefined : `${order.enterDelay}ms`,
       }}
-      className={`wp-order-in relative overflow-hidden rounded-2xl border p-3 pl-4 backdrop-blur-xl transition-colors duration-300 ${
+      className={`wp-order-in relative overflow-hidden rounded-2xl border p-3.5 pl-4 shadow-[var(--wp-shadow-card)] backdrop-blur-xl transition-colors duration-300 ${
         soldOut
           ? 'wp-soldout-card border-red-500/35 bg-[#160A10]/85'
-          : 'border-white/[0.08] bg-[#0A101C]/80 hover:border-emerald-400/25'
-      } ${order.status === 'exit' ? 'wp-order-out' : ''}`}
+          : 'border-[var(--wp-border)] bg-[var(--wp-card)] hover:border-emerald-400/30'
+      } ${
+        order.status === 'exit'
+          ? order.exitDir === -1
+            ? 'wp-order-out-left'
+            : 'wp-order-out-right'
+          : ''
+      }`}
     >
       {/* left accent bar — platform colour, red when sold out */}
       <span
@@ -78,11 +86,11 @@ function OrderCardImpl({
         <div className="flex min-w-0 items-start gap-3">
           <span
             aria-hidden="true"
-            className={`mt-0.5 grid h-11 w-11 shrink-0 place-items-center overflow-hidden rounded-full text-center shadow-[inset_0_1px_0_rgba(255,255,255,0.18),0_6px_16px_-6px_rgba(0,0,0,0.8)] ${style.markClass}`}
+            className={`mt-0.5 grid h-12 w-12 shrink-0 place-items-center overflow-hidden rounded-full text-center shadow-[inset_0_1px_0_rgba(255,255,255,0.2),0_8px_20px_-6px_rgba(0,0,0,0.7)] ring-1 ring-white/15 ${style.markClass}`}
             style={{
               background: style.circleBg,
               color: style.markColor,
-              fontSize: style.mark.length > 3 ? 9 : style.mark.length > 2 ? 12 : 14,
+              fontSize: style.mark.length > 3 ? 10 : style.mark.length > 2 ? 13 : 15,
             }}
           >
             {style.mark}
@@ -90,8 +98,8 @@ function OrderCardImpl({
 
           <div className="min-w-0">
             <p
-              className={`text-[22px] font-extrabold leading-none tracking-tight tabular-nums transition-all duration-300 ${
-                soldOut ? 'text-[#5A6478] line-through decoration-red-400/60' : 'text-white'
+              className={`text-[23px] font-extrabold leading-none tracking-tight tabular-nums transition-all duration-300 ${
+                soldOut ? 'text-[var(--wp-muted-2)] line-through decoration-red-400/60' : 'text-[var(--wp-heading)]'
               }`}
             >
               ₹ {inr.format(order.amount)}
@@ -100,8 +108,8 @@ function OrderCardImpl({
             <span
               className={`mt-1.5 inline-flex items-center gap-1 rounded-md border px-1.5 py-0.5 text-[11px] font-bold transition-all duration-300 ${
                 soldOut
-                  ? 'border-white/[0.06] bg-white/[0.03] text-[#5A6478]'
-                  : 'border-emerald-400/25 bg-emerald-400/[0.08] text-emerald-300'
+                  ? 'border-[var(--wp-border)] bg-[var(--wp-chip)] text-[var(--wp-muted-2)]'
+                  : 'border-emerald-400/30 bg-emerald-400/[0.08] text-emerald-700 dark:text-emerald-300'
               }`}
             >
               <IconGift className="h-3 w-3" />
@@ -113,29 +121,29 @@ function OrderCardImpl({
         {!soldOut && (
           <span
             aria-label={`${order.remaining} seconds left`}
-            className={`flex h-7 shrink-0 items-center gap-1.5 rounded-lg border px-2 text-[12.5px] font-bold tabular-nums transition-colors duration-300 ${
+            className={`flex h-8 shrink-0 items-center gap-1.5 rounded-lg border px-2.5 text-[13px] font-bold tabular-nums transition-colors duration-300 ${
               urgent
-                ? 'border-amber-400/50 bg-amber-400/[0.08] text-amber-300'
-                : 'border-emerald-400/30 bg-emerald-400/[0.06] text-emerald-300'
+                ? 'border-amber-400/50 bg-amber-400/[0.08] text-amber-600 dark:text-amber-300'
+                : 'border-emerald-400/40 bg-emerald-400/[0.07] text-emerald-700 dark:text-emerald-300'
             }`}
           >
-            <IconClock className="h-3 w-3" />
+            <IconClock className="h-3.5 w-3.5" />
             {clockText(order.remaining)}
           </span>
         )}
       </div>
 
       {/* row 2 — payout source | CTA */}
-      <div className="mt-2 flex items-center justify-between gap-3">
+      <div className="mt-2.5 flex items-center justify-between gap-3">
         <p
-          className={`flex min-w-0 flex-1 items-center gap-1.5 whitespace-nowrap text-[10.5px] transition-colors duration-300 ${
-            soldOut ? 'text-[#4A5464]' : 'text-[#8A94A6]'
+          className={`flex min-w-0 flex-1 items-center gap-1.5 whitespace-nowrap text-[11px] transition-colors duration-300 ${
+            soldOut ? 'text-[var(--wp-faint)]' : 'text-[var(--wp-muted)]'
           }`}
         >
           Payout Requests From
           <span
-            className={`shrink-0 rounded-md border px-1.5 py-0.5 text-[9px] font-extrabold tracking-wide transition-colors duration-300 ${
-              soldOut ? 'border-white/[0.08] bg-white/[0.03] text-[#5A6478]' : style.badgeClass
+            className={`shrink-0 rounded-md border px-1.5 py-0.5 text-[9px] font-extrabold tracking-wide wp-badge transition-colors duration-300 ${
+              soldOut ? 'border-[var(--wp-border)] bg-[var(--wp-chip)] text-[var(--wp-muted-2)]' : style.badgeClass
             }`}
           >
             {order.source.toUpperCase()}
@@ -143,8 +151,8 @@ function OrderCardImpl({
         </p>
 
         {soldOut ? (
-          <span className="flex h-9 shrink-0 select-none items-center gap-1.5 rounded-xl border border-dashed border-red-400/60 px-3.5 text-[12px] font-extrabold tracking-wide text-red-400">
-            <IconBan className="h-3.5 w-3.5" />
+          <span className="flex h-10 shrink-0 select-none items-center gap-1.5 rounded-xl border border-dashed border-red-400/60 px-4 text-[12.5px] font-extrabold tracking-wide text-red-400">
+            <IconBan className="h-4 w-4" />
             SOLD OUT
           </span>
         ) : (
@@ -152,20 +160,20 @@ function OrderCardImpl({
             type="button"
             disabled={paying}
             onClick={() => onPay(order)}
-            className={`flex h-9 shrink-0 items-center gap-1.5 rounded-xl px-3.5 text-[12px] font-extrabold tracking-wide transition-all duration-200 ${
+            className={`flex h-10 shrink-0 items-center gap-1.5 rounded-xl px-5 text-[12.5px] font-extrabold tracking-wide transition-all duration-200 ${
               paying
-                ? 'cursor-wait bg-white/[0.06] text-[#8A94A6]'
+                ? 'cursor-wait bg-[var(--wp-hover)] text-[var(--wp-muted)]'
                 : 'bg-gradient-to-b from-[#2BF5A6] via-[#00D084] to-[#00B978] text-white shadow-[0_10px_24px_-8px_rgba(0,208,132,0.7),inset_0_1px_0_rgba(255,255,255,0.35)] hover:-translate-y-px hover:brightness-[1.06] active:translate-y-0 active:scale-[0.97]'
             }`}
           >
             {paying ? (
               <>
-                <IconLoader className="h-3.5 w-3.5 animate-spin" />
+                <IconLoader className="h-4 w-4 animate-spin" />
                 PROCESSING…
               </>
             ) : (
               <>
-                <IconWallet className="h-3.5 w-3.5" />
+                <IconWallet className="h-4 w-4" />
                 PAY ORDER
               </>
             )}

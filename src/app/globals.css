@@ -45,24 +45,25 @@
 
 :root {
   --radius: 0.625rem;
-  --background: oklch(1 0 0);
-  --foreground: oklch(0.145 0 0);
-  --card: oklch(1 0 0);
-  --card-foreground: oklch(0.145 0 0);
-  --popover: oklch(1 0 0);
-  --popover-foreground: oklch(0.145 0 0);
-  --primary: oklch(0.205 0 0);
-  --primary-foreground: oklch(0.985 0 0);
-  --secondary: oklch(0.97 0 0);
-  --secondary-foreground: oklch(0.205 0 0);
-  --muted: oklch(0.97 0 0);
-  --muted-foreground: oklch(0.556 0 0);
-  --accent: oklch(0.97 0 0);
-  --accent-foreground: oklch(0.205 0 0);
-  --destructive: oklch(0.577 0.245 27.325);
-  --border: oklch(0.922 0 0);
-  --input: oklch(0.922 0 0);
-  --ring: oklch(0.708 0 0);
+  /* WatchPay LIGHT theme — white background, deep-green text, emerald accents */
+  --background: #f6f9f7;
+  --foreground: #0b1f17;
+  --card: #ffffff;
+  --card-foreground: #0b1f17;
+  --popover: #ffffff;
+  --popover-foreground: #0b1f17;
+  --primary: #00a86b;
+  --primary-foreground: #ffffff;
+  --secondary: #e8f0ec;
+  --secondary-foreground: #0b1f17;
+  --muted: #edf3ef;
+  --muted-foreground: #5c6b63;
+  --accent: #e2f3ea;
+  --accent-foreground: #065f46;
+  --destructive: #dc2626;
+  --border: rgba(7, 60, 45, 0.12);
+  --input: rgba(7, 60, 45, 0.14);
+  --ring: rgba(0, 168, 107, 0.45);
   --chart-1: oklch(0.646 0.222 41.116);
   --chart-2: oklch(0.6 0.118 184.704);
   --chart-3: oklch(0.398 0.07 227.392);
@@ -122,6 +123,64 @@
 }
 
 /* ============================================================
+   WatchPay component theme tokens — .wp-app dark (default)
+   .wp-app.wp-light flips every token to the white/light theme.
+   Components consume via var(--wp-*) utilities so ONE class on the
+   root re-themes the whole app.
+   ============================================================ */
+.wp-app {
+  --wp-bg: #05070b;
+  --wp-bg-dim: #0a1120;
+  --wp-card: rgba(10, 16, 28, 0.82);
+  --wp-card-solid: #0a101c;
+  --wp-card-raise: #0b1322;
+  --wp-input: #0a101c;
+  --wp-input-focus: #0b1322;
+  --wp-border: rgba(255, 255, 255, 0.08);
+  --wp-border-strong: rgba(255, 255, 255, 0.16);
+  --wp-text: #f2f5f9;
+  --wp-heading: #ffffff;
+  --wp-muted: #8a94a6;
+  --wp-muted-2: #5a6478;
+  --wp-faint: #4e5a6e;
+  --wp-hover: rgba(255, 255, 255, 0.04);
+  --wp-chip: rgba(255, 255, 255, 0.03);
+  --wp-accent-text: #00d084;
+  --wp-accent-soft: rgba(0, 208, 132, 0.1);
+  --wp-shadow-card: 0 10px 30px -18px rgba(0, 0, 0, 0.9);
+  --wp-shadow-pop: 0 24px 60px -16px rgba(0, 0, 0, 0.9);
+  --wp-nav-bg: rgba(7, 12, 21, 0.92);
+  --wp-menu-bg: rgba(11, 17, 28, 0.95);
+  --wp-ticker-chip-fg: #04120c;
+}
+
+.wp-app.wp-light {
+  --wp-bg: #f4f8f5;
+  --wp-bg-dim: #ffffff;
+  --wp-card: rgba(255, 255, 255, 0.94);
+  --wp-card-solid: #ffffff;
+  --wp-card-raise: #ffffff;
+  --wp-input: #ffffff;
+  --wp-input-focus: #ffffff;
+  --wp-border: rgba(7, 60, 45, 0.13);
+  --wp-border-strong: rgba(7, 60, 45, 0.24);
+  --wp-text: #10241b;
+  --wp-heading: #07130d;
+  --wp-muted: #5c6b63;
+  --wp-muted-2: #8a968e;
+  --wp-faint: #9aa79e;
+  --wp-hover: rgba(6, 78, 59, 0.045);
+  --wp-chip: rgba(6, 78, 59, 0.035);
+  --wp-accent-text: #00915c;
+  --wp-accent-soft: rgba(0, 168, 107, 0.09);
+  --wp-shadow-card: 0 10px 30px -20px rgba(6, 50, 38, 0.35);
+  --wp-shadow-pop: 0 24px 60px -20px rgba(6, 50, 38, 0.3);
+  --wp-nav-bg: rgba(255, 255, 255, 0.94);
+  --wp-menu-bg: rgba(255, 255, 255, 0.98);
+  --wp-ticker-chip-fg: #ffffff;
+}
+
+/* ============================================================
    WatchPay — premium emerald registration theme (custom layer)
    ============================================================ */
 
@@ -156,7 +215,7 @@
   animation: wp-step-pulse 2.6s ease-in-out infinite;
 }
 
-/* keep autofilled inputs dark */
+/* keep autofilled inputs themed */
 input:-webkit-autofill,
 input:-webkit-autofill:hover,
 input:-webkit-autofill:focus,
@@ -165,6 +224,14 @@ input:-webkit-autofill:active {
   -webkit-box-shadow: 0 0 0 1000px #0a101b inset;
   caret-color: #f2f5f9;
   transition: background-color 99999s ease-out 0s;
+}
+.wp-light input:-webkit-autofill,
+.wp-light input:-webkit-autofill:hover,
+.wp-light input:-webkit-autofill:focus,
+.wp-light input:-webkit-autofill:active {
+  -webkit-text-fill-color: #10241b;
+  -webkit-box-shadow: 0 0 0 1000px #ffffff inset;
+  caret-color: #00a86b;
 }
 
 /* emerald selection + slim dark scrollbar */
@@ -290,15 +357,32 @@ input {
   animation: wp-order-in 0.45s cubic-bezier(0.22, 1, 0.36, 1) both;
 }
 
-/* order card exit — fade + slide away (defined AFTER wp-order-in so it wins) */
-@keyframes wp-order-out {
-  to {
+/* order card exit — swipe away (alternating left/right) */
+@keyframes wp-order-out-right {
+  0% {
+    opacity: 1;
+    transform: translateX(0) rotate(0deg);
+  }
+  100% {
     opacity: 0;
-    transform: translateX(30px) scale(0.96);
+    transform: translateX(72px) rotate(2.5deg) scale(0.94);
   }
 }
-.wp-order-out {
-  animation: wp-order-out 0.42s cubic-bezier(0.4, 0, 0.7, 0.2) forwards !important;
+@keyframes wp-order-out-left {
+  0% {
+    opacity: 1;
+    transform: translateX(0) rotate(0deg);
+  }
+  100% {
+    opacity: 0;
+    transform: translateX(-72px) rotate(-2.5deg) scale(0.94);
+  }
+}
+.wp-order-out-right {
+  animation: wp-order-out-right 0.48s cubic-bezier(0.45, 0, 0.55, 1) forwards !important;
+}
+.wp-order-out-left {
+  animation: wp-order-out-left 0.48s cubic-bezier(0.45, 0, 0.55, 1) forwards !important;
 }
 
 /* sold-out red warning glow */
@@ -337,6 +421,15 @@ input {
   );
   background-size: 200% 100%;
   animation: wp-shimmer 1.5s linear infinite;
+}
+.wp-light .wp-shimmer {
+  background: linear-gradient(
+    100deg,
+    rgba(6, 78, 59, 0.04) 40%,
+    rgba(0, 168, 107, 0.12) 50%,
+    rgba(6, 78, 59, 0.04) 60%
+  );
+  background-size: 200% 100%;
 }
 
 /* pulsing live dot */
@@ -379,7 +472,28 @@ input {
     animation: none;
   }
   .wp-order-in,
-  .wp-order-out {
+  .wp-order-out-right,
+  .wp-order-out-left {
     animation-duration: 0.01s;
   }
+}
+
+/* light theme adjustments */
+.wp-light ::selection {
+  background: rgba(0, 168, 107, 0.22);
+  color: #07130d;
+}
+.wp-light ::-webkit-scrollbar-track {
+  background: #f4f8f5;
+}
+.wp-light ::-webkit-scrollbar-thumb {
+  background: #c4d4ca;
+}
+.wp-light {
+  scrollbar-color: #c4d4ca #f4f8f5;
+}
+
+/* light-mode platform badge legibility: darken brand-tinted chips */
+.wp-light .wp-badge {
+  filter: brightness(0.68) saturate(1.5);
 }

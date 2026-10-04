@@ -7,7 +7,7 @@ import { IconBolt } from './icons'
  */
 export function LiveOrdersHeader({ activeCount }: { activeCount: number }) {
   return (
-    <section className="relative overflow-hidden rounded-2xl border border-white/[0.07] bg-[#0A101C]/75 px-4 py-4 backdrop-blur-xl">
+    <section className="relative overflow-hidden rounded-2xl border border-[var(--wp-border)] bg-[var(--wp-card)] px-4 py-4 backdrop-blur-xl">
       {/* left accent bar */}
       <span
         aria-hidden="true"
@@ -18,28 +18,28 @@ export function LiveOrdersHeader({ activeCount }: { activeCount: number }) {
         <div className="min-w-0">
           <div className="flex flex-wrap items-center gap-2">
             <h2 className="text-[22px] font-extrabold leading-none tracking-tight">
-              <span className="text-white">Live</span>{' '}
-              <span className="bg-gradient-to-b from-[#4DF7B8] to-[#00B978] bg-clip-text text-transparent [filter:drop-shadow(0_0_10px_rgba(0,208,132,0.45))]">
+              <span className="text-[var(--wp-heading)]">Live</span>{' '}
+              <span className="bg-gradient-to-b from-emerald-600 to-emerald-500 bg-clip-text text-transparent dark:from-[#4DF7B8] dark:to-[#00B978] [filter:drop-shadow(0_0_10px_rgba(0,208,132,0.45))]">
                 Orders
               </span>
             </h2>
-            <span className="flex items-center gap-1.5 rounded-full border border-emerald-400/30 bg-emerald-400/[0.08] px-2.5 py-1 text-[10.5px] font-bold text-emerald-300">
+            <span className="flex items-center gap-1.5 rounded-full border border-emerald-400/30 bg-emerald-400/[0.08] px-2.5 py-1 text-[10.5px] font-bold text-emerald-700 dark:text-emerald-300">
               <span className="wp-live-dot h-1.5 w-1.5 rounded-full bg-[#00E091] shadow-[0_0_8px_rgba(0,224,145,0.9)]" />
               Instant Payouts
             </span>
           </div>
 
-          <p className="mt-2 text-[11px] leading-relaxed text-[#8A94A6]">
+          <p className="mt-2 text-[11px] leading-relaxed text-[var(--wp-muted)]">
             Instant Add Amount + Bonus • Payouts from{' '}
             {PLATFORMS.join(', ')}
           </p>
 
           <p
             aria-live="polite"
-            className="mt-2 inline-flex items-center gap-1.5 rounded-full border border-white/[0.08] bg-white/[0.03] px-2.5 py-1 text-[10.5px] font-semibold text-[#8A94A6]"
+            className="mt-2 inline-flex items-center gap-1.5 rounded-full border border-[var(--wp-border)] bg-[var(--wp-chip)] px-2.5 py-1 text-[10.5px] font-semibold text-[var(--wp-muted)]"
           >
             <span className="h-1.5 w-1.5 rounded-full bg-[#00E091] shadow-[0_0_8px_rgba(0,224,145,0.9)]" />
-            <span className="tabular-nums text-emerald-300">{activeCount}</span> live order
+            <span className="tabular-nums text-emerald-700 dark:text-emerald-300">{activeCount}</span> live order
             {activeCount === 1 ? '' : 's'} available
           </p>
         </div>

@@ -148,15 +148,15 @@ const PARTICLES = [
   { l: '63%', t: '58%', s: 2, o: 0.17, du: '14s', delay: '1.1s', c: '#00D084' },
 ]
 
-function AmbientBackground({ dim }: { dim: boolean }) {
+function AmbientBackground({ light }: { light: boolean }) {
   return (
     <div aria-hidden="true" className="pointer-events-none absolute inset-0 overflow-hidden">
       {/* deep base wash */}
       <div
         className="absolute inset-0 transition-colors duration-700"
         style={{
-          background: dim
-            ? 'radial-gradient(130% 100% at 50% 0%, #12203A 0%, #0A1220 48%, #06090F 100%)'
+          background: light
+            ? 'radial-gradient(130% 100% at 50% 0%, #FFFFFF 0%, #F1F8F3 52%, #E7F1EA 100%)'
             : 'radial-gradient(130% 100% at 50% 0%, #0B1626 0%, #05080E 52%, #030508 100%)',
         }}
       />
@@ -164,31 +164,46 @@ function AmbientBackground({ dim }: { dim: boolean }) {
       <div
         className="absolute -top-40 left-1/2 h-[480px] w-[560px] -translate-x-1/2 rounded-full"
         style={{
-          background:
-            'radial-gradient(closest-side, rgba(0,224,145,0.20), rgba(0,224,145,0.06) 55%, transparent 75%)',
+          background: light
+            ? 'radial-gradient(closest-side, rgba(0,208,132,0.14), rgba(0,208,132,0.04) 55%, transparent 75%)'
+            : 'radial-gradient(closest-side, rgba(0,224,145,0.20), rgba(0,224,145,0.06) 55%, transparent 75%)',
         }}
       />
       {/* aurora — teal mid-left */}
       <div
         className="absolute left-[-160px] top-[30%] h-[420px] w-[420px] rounded-full"
-        style={{ background: 'radial-gradient(closest-side, rgba(13,211,166,0.10), transparent 70%)' }}
+        style={{
+          background: light
+            ? 'radial-gradient(closest-side, rgba(13,211,166,0.10), transparent 70%)'
+            : 'radial-gradient(closest-side, rgba(13,211,166,0.10), transparent 70%)',
+        }}
       />
       {/* aurora — emerald mid-right */}
       <div
         className="absolute right-[-180px] top-[52%] h-[460px] w-[460px] rounded-full"
-        style={{ background: 'radial-gradient(closest-side, rgba(0,183,120,0.11), transparent 70%)' }}
+        style={{
+          background: light
+            ? 'radial-gradient(closest-side, rgba(0,183,120,0.10), transparent 70%)'
+            : 'radial-gradient(closest-side, rgba(0,183,120,0.11), transparent 70%)',
+        }}
       />
       {/* halo behind card */}
       <div
         className="absolute left-1/2 top-[44%] h-[600px] w-[560px] -translate-x-1/2 rounded-full"
         style={{
-          background: 'radial-gradient(circle, rgba(0,208,132,0.12) 0%, transparent 62%)',
+          background: light
+            ? 'radial-gradient(circle, rgba(0,208,132,0.10) 0%, transparent 62%)'
+            : 'radial-gradient(circle, rgba(0,208,132,0.12) 0%, transparent 62%)',
         }}
       />
       {/* bottom deep glow */}
       <div
         className="absolute -bottom-40 left-1/2 h-[420px] w-[620px] -translate-x-1/2 rounded-full"
-        style={{ background: 'radial-gradient(closest-side, rgba(0,209,132,0.10), transparent 72%)' }}
+        style={{
+          background: light
+            ? 'radial-gradient(closest-side, rgba(0,209,132,0.09), transparent 72%)'
+            : 'radial-gradient(closest-side, rgba(0,209,132,0.10), transparent 72%)',
+        }}
       />
       {/* minimal geometric light lines */}
       <svg
@@ -199,17 +214,17 @@ function AmbientBackground({ dim }: { dim: boolean }) {
       >
         <path
           d="M-20 150 C 90 90, 150 210, 300 130 S 420 60, 430 90"
-          stroke="rgba(0,208,132,0.16)"
+          stroke={light ? 'rgba(0,168,107,0.20)' : 'rgba(0,208,132,0.16)'}
           strokeWidth="1.2"
         />
         <path
           d="M-30 690 C 80 740, 210 640, 320 700 S 420 780, 440 740"
-          stroke="rgba(0,208,132,0.12)"
+          stroke={light ? 'rgba(0,168,107,0.15)' : 'rgba(0,208,132,0.12)'}
           strokeWidth="1.2"
         />
         <path
           d="M330 -20 C 300 80, 380 140, 350 240"
-          stroke="rgba(125,240,200,0.08)"
+          stroke={light ? 'rgba(0,150,95,0.12)' : 'rgba(125,240,200,0.08)'}
           strokeWidth="1"
         />
       </svg>
@@ -223,9 +238,9 @@ function AmbientBackground({ dim }: { dim: boolean }) {
             top: p.t,
             width: p.s,
             height: p.s,
-            opacity: p.o,
-            background: p.c,
-            boxShadow: `0 0 ${p.s * 3}px ${p.c}`,
+            opacity: light ? p.o * 0.75 : p.o,
+            background: light && p.c === '#E8FFF5' ? '#00A86B' : p.c,
+            boxShadow: `0 0 ${p.s * 3}px ${light ? 'rgba(0,168,107,0.55)' : p.c}`,
             ['--du' as string]: p.du,
             ['--delay' as string]: p.delay,
           }}
@@ -247,15 +262,15 @@ function Logo() {
           <IconPlayFill className="h-4 w-4 translate-x-[1px] text-[#04120C]" />
         </div>
         <h1 className="text-[30px] font-extrabold italic leading-none tracking-tight">
-          <span className="text-slate-50 [text-shadow:0_2px_18px_rgba(226,255,242,0.25)]">
+          <span className="text-[var(--wp-text)]">
             WATCH
           </span>
-          <span className="bg-gradient-to-b from-[#4DF7B8] via-[#00D084] to-[#00B978] bg-clip-text text-transparent [filter:drop-shadow(0_0_16px_rgba(0,208,132,0.5))]">
+          <span className="bg-gradient-to-b from-emerald-600 via-emerald-500 to-emerald-600 bg-clip-text text-transparent dark:from-[#4DF7B8] dark:via-[#00D084] dark:to-[#00B978] [filter:drop-shadow(0_0_16px_rgba(0,208,132,0.35))]">
             PAY
           </span>
         </h1>
       </div>
-      <p className="mt-2.5 text-[10px] font-semibold uppercase tracking-[0.42em] text-[#7C8698]">
+      <p className="mt-2.5 text-[10px] font-semibold uppercase tracking-[0.42em] text-[var(--wp-muted-2)]">
         Watch<span className="mx-1.5 text-emerald-400">•</span>Earn
         <span className="mx-1.5 text-emerald-400">•</span>Grow
       </p>
@@ -278,7 +293,7 @@ function StepIndicator({ active }: { active: 1 | 2 }) {
       )
     }
     return (
-      <div className="grid h-9 w-9 place-items-center rounded-full border border-white/10 bg-[#0A101C] text-[14px] font-bold text-[#5A6478]">
+      <div className="grid h-9 w-9 place-items-center rounded-full border border-[var(--wp-border)] bg-[var(--wp-input)] text-[14px] font-bold text-[var(--wp-muted-2)]">
         {step}
       </div>
     )
@@ -286,7 +301,7 @@ function StepIndicator({ active }: { active: 1 | 2 }) {
   const label = (step: 1 | 2, text: string) => (
     <span
       className={`text-[11.5px] ${
-        step === active ? 'font-semibold text-emerald-400' : 'font-medium text-[#5A6478]'
+        step === active ? 'font-semibold text-emerald-600 dark:text-emerald-400' : 'font-medium text-[var(--wp-muted-2)]'
       }`}
     >
       {text}
@@ -301,8 +316,8 @@ function StepIndicator({ active }: { active: 1 | 2 }) {
       <div
         className={`mx-3 mt-[17px] h-[2px] w-14 rounded-full ${
           active === 2
-            ? 'bg-gradient-to-r from-white/10 via-white/15 to-emerald-400/80'
-            : 'bg-gradient-to-r from-emerald-400/80 via-white/15 to-white/10'
+            ? 'bg-gradient-to-r from-[var(--wp-border)] via-[var(--wp-border-strong)] to-emerald-400/80'
+            : 'bg-gradient-to-r from-emerald-400/80 via-[var(--wp-border-strong)] to-[var(--wp-border)]'
         }`}
       />
       <div className="flex flex-col items-center gap-1.5">
@@ -325,8 +340,8 @@ function AuthCard({ children }: { children: ReactNode }) {
         }}
       />
       {/* gradient border wrapper */}
-      <div className="rounded-[26px] bg-gradient-to-b from-emerald-400/[0.30] via-emerald-400/[0.07] to-emerald-400/[0.15] p-px shadow-[0_30px_90px_-24px_rgba(0,0,0,0.85)]">
-        <section className="relative overflow-hidden rounded-[25px] bg-[#070C15]/85 px-5 py-6 backdrop-blur-2xl sm:px-6">
+      <div className="rounded-[26px] bg-gradient-to-b from-emerald-500/[0.45] via-emerald-500/[0.10] to-emerald-500/[0.20] p-px shadow-[0_30px_80px_-30px_rgba(6,50,38,0.45)]">
+        <section className="relative overflow-hidden rounded-[25px] bg-[var(--wp-card)] px-5 py-6 backdrop-blur-2xl sm:px-6">
           <div
             aria-hidden="true"
             className="absolute inset-x-10 top-0 h-px bg-gradient-to-r from-transparent via-emerald-300/60 to-transparent"
@@ -450,12 +465,12 @@ function OtpInput({
             onChange={(e) => handleInput(i, e.target.value)}
             onKeyDown={(e) => handleKeyDown(i, e)}
             onFocus={(e) => e.currentTarget.select()}
-            className={`h-[52px] w-[44px] rounded-[12px] border bg-[#0A101C] text-center text-[20px] font-bold text-slate-50 outline-none transition-all duration-200 disabled:opacity-60 ${
+            className={`h-[52px] w-[44px] rounded-[12px] border bg-[var(--wp-input)] text-center text-[20px] font-bold text-[var(--wp-text)] outline-none transition-all duration-200 disabled:opacity-60 ${
               error
                 ? 'border-red-400/70'
                 : filled
-                  ? 'border-emerald-400/50 bg-[#0B1A22] shadow-[0_0_14px_rgba(0,208,132,0.18)]'
-                  : 'border-white/10'
+                  ? 'border-emerald-400/50 bg-[var(--wp-accent-soft)] shadow-[0_0_14px_rgba(0,208,132,0.18)]'
+                  : 'border-[var(--wp-border)]'
             } focus:border-emerald-400 focus:shadow-[0_0_0_3px_rgba(0,208,132,0.16)]`}
           />
         )
@@ -469,14 +484,14 @@ function OtpInput({
 /* ------------------------------------------------------------------ */
 
 const INPUT_BASE =
-  'h-[54px] w-full rounded-[13px] bg-[#0A101C] text-[16px] text-slate-50 outline-none transition-all duration-200 placeholder:text-[#5A6478] focus:bg-[#0B1322]'
+  'h-[54px] w-full rounded-[13px] bg-[var(--wp-input)] text-[16px] text-[var(--wp-text)] outline-none transition-all duration-200 placeholder:text-[var(--wp-muted-2)] focus:bg-[var(--wp-input-focus)]'
 
 const inputTone = (err?: string) =>
   err
     ? 'border-red-400/60 focus:border-red-400/70 focus:shadow-[0_0_0_3px_rgba(248,113,113,0.14)]'
-    : 'border-white/10 hover:border-white/[0.16] focus:border-emerald-400/60 focus:shadow-[0_0_0_3px_rgba(0,208,132,0.14)]'
+    : 'border-[var(--wp-border)] hover:border-[var(--wp-border-strong)] focus:border-emerald-400/60 focus:shadow-[0_0_0_3px_rgba(0,208,132,0.14)]'
 
-const helpTone = (err?: string) => (err ? 'text-red-400' : 'text-[#5F6B7E]')
+const helpTone = (err?: string) => (err ? 'text-red-400' : 'text-[var(--wp-muted-2)]')
 
 const MOBILE_RE = /^\d{10}$/
 
@@ -484,6 +499,35 @@ type FieldKey = 'username' | 'mobile' | 'password' | 'confirm'
 type FormValues = Record<FieldKey, string>
 type FormErrors = Partial<Record<FieldKey, string>>
 type View = 'register' | 'otp' | 'success' | 'login' | 'home'
+
+/* ------------------------------------------------------------------ */
+/*  Hash routing — example.com/#/login, /#/register, /#/home …         */
+/* ------------------------------------------------------------------ */
+
+const VIEW_HASH: Record<View, string> = {
+  register: '#/register',
+  otp: '#/otp',
+  success: '#/success',
+  login: '#/login',
+  home: '#/home',
+}
+
+function viewFromHash(hash: string): View | null {
+  switch (hash) {
+    case '#/register':
+      return 'register'
+    case '#/otp':
+      return 'otp'
+    case '#/success':
+      return 'success'
+    case '#/login':
+      return 'login'
+    case '#/home':
+      return 'home'
+    default:
+      return null
+  }
+}
 
 function validate(v: FormValues): FormErrors {
   const e: FormErrors = {}
@@ -506,10 +550,14 @@ export default function WatchPayAuth() {
   const { toast } = useToast()
 
   const [view, setView] = useState<View>('register')
-  const [dim, setDim] = useState(false)
+  const [light, setLight] = useState(false)
   const [showPassword, setShowPassword] = useState(false)
   const [showConfirm, setShowConfirm] = useState(false)
   const [showLoginPassword, setShowLoginPassword] = useState(false)
+
+  /* refs used by the hash router for access guards */
+  const authedRef = useRef(false)
+  const viewRef = useRef<View>('register')
 
   /* registration step 1 */
   const [values, setValues] = useState<FormValues>({
@@ -537,24 +585,99 @@ export default function WatchPayAuth() {
   const [loggingIn, setLoggingIn] = useState(false)
   const [loggedInUser, setLoggedInUser] = useState<string | null>(null)
 
-  /* Restore session on refresh — a valid session cookie goes straight Home. */
+  /* Restore session on refresh — a valid session cookie goes straight Home.
+     Also restores the saved theme and honours deep links like /#/login. */
   useEffect(() => {
     let cancelled = false
+
+    // saved theme
+    try {
+      if (localStorage.getItem('wp-theme') === 'light') setLight(true)
+    } catch {
+      /* private mode */
+    }
+
+    const initial = viewFromHash(window.location.hash)
+
     ;(async () => {
+      let username: string | null = null
       try {
         const res = await fetch('/api/auth/me', { cache: 'no-store' })
         const data = await res.json()
         if (!cancelled && res.ok && data?.authenticated && data?.username) {
-          setLoggedInUser(data.username)
-          setView('home')
+          username = data.username as string
         }
       } catch {
-        // offline / first visit — stay on the register view
+        // offline / first visit — treat as guest
+      }
+      if (cancelled) return
+
+      authedRef.current = !!username
+      if (username) {
+        setLoggedInUser(username)
+        setView('home')
+        if (window.location.hash !== VIEW_HASH.home) {
+          window.location.hash = VIEW_HASH.home
+        }
+        return
+      }
+      // guest: honour register/login deep links, everything else → register
+      if (initial === 'login') {
+        setView('login')
+      } else if (window.location.hash !== VIEW_HASH.register) {
+        window.location.hash = VIEW_HASH.register
       }
     })()
+
     return () => {
       cancelled = true
     }
+  }, [])
+
+  /* theme → <html> class (shadcn tokens) + persistence */
+  useEffect(() => {
+    document.documentElement.classList.toggle('dark', !light)
+    document.documentElement.style.colorScheme = light ? 'light' : 'dark'
+    try {
+      localStorage.setItem('wp-theme', light ? 'light' : 'dark')
+    } catch {
+      /* private mode */
+    }
+  }, [light])
+
+  /* keep the URL hash in sync with the active view (SPA-style) */
+  useEffect(() => {
+    viewRef.current = view
+    const target = VIEW_HASH[view]
+    if (window.location.hash !== target) {
+      window.location.hash = target
+    }
+  }, [view])
+
+  /* back/forward buttons + manual hash edits stay in sync (with guards) */
+  useEffect(() => {
+    const applyHash = () => {
+      const v = viewFromHash(window.location.hash)
+      if (!v) {
+        // no/unknown hash → default per auth state
+        const fallback = authedRef.current ? VIEW_HASH.home : VIEW_HASH.register
+        if (window.location.hash !== fallback) window.location.hash = fallback
+        return
+      }
+      if (v === 'home' && !authedRef.current) {
+        window.location.hash = VIEW_HASH.login
+        setView('login')
+        return
+      }
+      if (v === 'success' && viewRef.current !== 'otp' && viewRef.current !== 'success') {
+        window.location.hash = VIEW_HASH.register
+        setView('register')
+        return
+      }
+      setView(v)
+    }
+    window.addEventListener('hashchange', applyHash)
+    return () => window.removeEventListener('hashchange', applyHash)
   }, [])
 
   const strength = values.password
@@ -685,6 +808,7 @@ export default function WatchPayAuth() {
         return
       }
       setLoggedInUser(data.user?.username ?? '')
+      authedRef.current = true
       setView('home')
       toast({
         title: 'Login successful',
@@ -719,11 +843,11 @@ export default function WatchPayAuth() {
 
   return (
     <main
-      className={`relative min-h-svh overflow-x-hidden transition-colors duration-700 ${
-        dim ? 'bg-[#0A1120]' : 'bg-[#05070B]'
+      className={`wp-app relative min-h-svh overflow-x-hidden bg-[var(--wp-bg)] transition-colors duration-500 ${
+        light ? 'wp-light' : ''
       }`}
     >
-      <AmbientBackground dim={dim} />
+      <AmbientBackground light={light} />
 
       <div className="relative z-10 mx-auto flex min-h-svh w-full max-w-[430px] flex-col px-5 pb-[max(18px,env(safe-area-inset-bottom))] pt-[max(12px,env(safe-area-inset-top))]">
         <div className="my-auto">
@@ -732,14 +856,14 @@ export default function WatchPayAuth() {
             <header className="relative mb-4 flex flex-col items-center">
               <button
                 type="button"
-                aria-label={dim ? 'Switch to dark mode' : 'Switch to dim mode'}
-                onClick={() => setDim((v) => !v)}
-                className="absolute right-0 top-0 grid h-10 w-10 place-items-center rounded-full border border-white/10 bg-white/[0.04] text-slate-300 transition-all duration-200 hover:border-emerald-400/40 hover:bg-emerald-400/10 hover:text-emerald-300 active:scale-95"
+                aria-label={light ? 'Switch to dark mode' : 'Switch to light mode'}
+                onClick={() => setLight((v) => !v)}
+                className="absolute right-0 top-0 grid h-10 w-10 place-items-center rounded-full border border-[var(--wp-border)] bg-[var(--wp-hover)] text-[var(--wp-text)] transition-all duration-200 hover:border-emerald-400/40 hover:bg-emerald-400/10 hover:text-emerald-600 active:scale-95"
               >
-                {dim ? (
-                  <IconSun className="h-[18px] w-[18px]" />
-                ) : (
+                {light ? (
                   <IconMoon className="h-[18px] w-[18px]" />
+                ) : (
+                  <IconSun className="h-[18px] w-[18px]" />
                 )}
               </button>
               <Logo />
@@ -749,13 +873,13 @@ export default function WatchPayAuth() {
           {/* ======================== REGISTER VIEW ======================== */}
           {view === 'register' && (
             <AuthCard>
-              <h2 className="text-center text-[25px] font-extrabold leading-tight tracking-tight text-white">
+              <h2 className="text-center text-[25px] font-extrabold leading-tight tracking-tight text-[var(--wp-heading)]">
                 Create Your{' '}
                 <span className="bg-gradient-to-b from-[#4DF7B8] to-[#00B978] bg-clip-text text-transparent [filter:drop-shadow(0_0_12px_rgba(0,208,132,0.4))]">
                   Account
                 </span>
               </h2>
-              <p className="mt-1.5 text-center text-[13.5px] text-[#8A94A6]">
+              <p className="mt-1.5 text-center text-[13.5px] text-[var(--wp-muted)]">
                 Create your account &amp; start earning
               </p>
 
@@ -766,13 +890,13 @@ export default function WatchPayAuth() {
                 <div>
                   <label
                     htmlFor="wp-username"
-                    className="mb-2 flex items-center gap-2 text-[13px] font-semibold text-slate-200"
+                    className="mb-2 flex items-center gap-2 text-[13px] font-semibold text-[var(--wp-text)]"
                   >
                     <IconUser className="h-3.5 w-3.5 text-emerald-400" />
                     Username
                   </label>
                   <div className="group relative">
-                    <IconUser className="pointer-events-none absolute left-4 top-1/2 h-[17px] w-[17px] -translate-y-1/2 text-[#4E5A6E] transition-colors duration-200 group-focus-within:text-emerald-400" />
+                    <IconUser className="pointer-events-none absolute left-4 top-1/2 h-[17px] w-[17px] -translate-y-1/2 text-[var(--wp-faint)] transition-colors duration-200 group-focus-within:text-emerald-400" />
                     <input
                       id="wp-username"
                       name="username"
@@ -798,20 +922,20 @@ export default function WatchPayAuth() {
                 <div>
                   <label
                     htmlFor="wp-mobile"
-                    className="mb-2 flex items-center gap-2 text-[13px] font-semibold text-slate-200"
+                    className="mb-2 flex items-center gap-2 text-[13px] font-semibold text-[var(--wp-text)]"
                   >
                     <IconSmartphone className="h-3.5 w-3.5 text-emerald-400" />
                     Mobile Number
                   </label>
                   <div
-                    className={`flex h-[54px] w-full items-center rounded-[13px] border bg-[#0A101C] transition-all duration-200 focus-within:bg-[#0B1322] ${
+                    className={`flex h-[54px] w-full items-center rounded-[13px] border bg-[var(--wp-input)] transition-all duration-200 focus-within:bg-[var(--wp-input-focus)] ${
                       errors.mobile
                         ? 'border-red-400/60 focus-within:shadow-[0_0_0_3px_rgba(248,113,113,0.14)]'
-                        : 'border-white/10 focus-within:border-emerald-400/60 focus-within:shadow-[0_0_0_3px_rgba(0,208,132,0.14)]'
+                        : 'border-[var(--wp-border)] focus-within:border-emerald-400/60 focus-within:shadow-[0_0_0_3px_rgba(0,208,132,0.14)]'
                     }`}
                   >
-                    <div className="flex h-full items-center gap-1.5 border-r border-white/10 pl-4 pr-3">
-                      <span className="text-[14px] font-bold text-slate-50">IN</span>
+                    <div className="flex h-full items-center gap-1.5 border-r border-[var(--wp-border)] pl-4 pr-3">
+                      <span className="text-[14px] font-bold text-[var(--wp-text)]">IN</span>
                       <span className="text-[14px] font-semibold text-emerald-400">+91</span>
                     </div>
                     <input
@@ -827,7 +951,7 @@ export default function WatchPayAuth() {
                         update('mobile', e.target.value.replace(/\D/g, '').slice(0, 10))
                       }
                       aria-invalid={!!errors.mobile}
-                      className="h-full w-full flex-1 bg-transparent pl-3.5 pr-4 text-[16px] text-slate-50 outline-none placeholder:text-[#5A6478]"
+                      className="h-full w-full flex-1 bg-transparent pl-3.5 pr-4 text-[16px] text-[var(--wp-text)] outline-none placeholder:text-[var(--wp-muted-2)]"
                     />
                   </div>
                 </div>
@@ -836,13 +960,13 @@ export default function WatchPayAuth() {
                 <div>
                   <label
                     htmlFor="wp-password"
-                    className="mb-2 flex items-center gap-2 text-[13px] font-semibold text-slate-200"
+                    className="mb-2 flex items-center gap-2 text-[13px] font-semibold text-[var(--wp-text)]"
                   >
                     <IconLock className="h-3.5 w-3.5 text-emerald-400" />
                     Password
                   </label>
                   <div className="group relative">
-                    <IconLock className="pointer-events-none absolute left-4 top-1/2 h-[17px] w-[17px] -translate-y-1/2 text-[#4E5A6E] transition-colors duration-200 group-focus-within:text-emerald-400" />
+                    <IconLock className="pointer-events-none absolute left-4 top-1/2 h-[17px] w-[17px] -translate-y-1/2 text-[var(--wp-faint)] transition-colors duration-200 group-focus-within:text-emerald-400" />
                     <input
                       id="wp-password"
                       name="password"
@@ -859,7 +983,7 @@ export default function WatchPayAuth() {
                       type="button"
                       onClick={() => setShowPassword((v) => !v)}
                       aria-label={showPassword ? 'Hide password' : 'Show password'}
-                      className="absolute right-2 top-1/2 grid h-9 w-9 -translate-y-1/2 place-items-center rounded-lg text-[#5A6478] transition-colors duration-200 hover:bg-emerald-400/10 hover:text-emerald-300"
+                      className="absolute right-2 top-1/2 grid h-9 w-9 -translate-y-1/2 place-items-center rounded-lg text-[var(--wp-muted-2)] transition-colors duration-200 hover:bg-emerald-400/10 hover:text-emerald-300"
                     >
                       {showPassword ? (
                         <IconEyeOff className="h-[18px] w-[18px]" />
@@ -881,7 +1005,7 @@ export default function WatchPayAuth() {
                         className={`h-[5px] w-14 rounded-full transition-colors duration-300 ${
                           n <= filledBars
                             ? 'bg-gradient-to-r from-[#2BF5A6] to-[#00B978]'
-                            : 'bg-white/[0.07]'
+                            : 'bg-[var(--wp-border)]'
                         }`}
                       />
                     ))}
@@ -892,13 +1016,13 @@ export default function WatchPayAuth() {
                 <div>
                   <label
                     htmlFor="wp-confirm"
-                    className="mb-2 flex items-center gap-2 text-[13px] font-semibold text-slate-200"
+                    className="mb-2 flex items-center gap-2 text-[13px] font-semibold text-[var(--wp-text)]"
                   >
                     <IconLock className="h-3.5 w-3.5 text-emerald-400" />
                     Confirm Password
                   </label>
                   <div className="group relative">
-                    <IconLock className="pointer-events-none absolute left-4 top-1/2 h-[17px] w-[17px] -translate-y-1/2 text-[#4E5A6E] transition-colors duration-200 group-focus-within:text-emerald-400" />
+                    <IconLock className="pointer-events-none absolute left-4 top-1/2 h-[17px] w-[17px] -translate-y-1/2 text-[var(--wp-faint)] transition-colors duration-200 group-focus-within:text-emerald-400" />
                     <input
                       id="wp-confirm"
                       name="confirm-password"
@@ -914,7 +1038,7 @@ export default function WatchPayAuth() {
                       type="button"
                       onClick={() => setShowConfirm((v) => !v)}
                       aria-label={showConfirm ? 'Hide password' : 'Show password'}
-                      className="absolute right-2 top-1/2 grid h-9 w-9 -translate-y-1/2 place-items-center rounded-lg text-[#5A6478] transition-colors duration-200 hover:bg-emerald-400/10 hover:text-emerald-300"
+                      className="absolute right-2 top-1/2 grid h-9 w-9 -translate-y-1/2 place-items-center rounded-lg text-[var(--wp-muted-2)] transition-colors duration-200 hover:bg-emerald-400/10 hover:text-emerald-300"
                     >
                       {showConfirm ? (
                         <IconEyeOff className="h-[18px] w-[18px]" />
@@ -956,14 +1080,14 @@ export default function WatchPayAuth() {
               </form>
 
               <div className="my-4 flex items-center gap-3" role="separator" aria-hidden="true">
-                <span className="h-px flex-1 bg-gradient-to-r from-transparent to-white/[0.12]" />
-                <span className="text-[10px] font-bold tracking-[0.24em] text-[#5A6478]">
+                <span className="h-px flex-1 bg-gradient-to-r from-transparent to-[var(--wp-border-strong)]" />
+                <span className="text-[10px] font-bold tracking-[0.24em] text-[var(--wp-muted-2)]">
                   HAVE AN ACCOUNT?
                 </span>
-                <span className="h-px flex-1 bg-gradient-to-l from-transparent to-white/[0.12]" />
+                <span className="h-px flex-1 bg-gradient-to-l from-transparent to-[var(--wp-border-strong)]" />
               </div>
 
-              <p className="text-center text-[13.5px] text-[#8A94A6]">
+              <p className="text-center text-[13.5px] text-[var(--wp-muted)]">
                 Already registered?{' '}
                 <button
                   type="button"
@@ -973,7 +1097,7 @@ export default function WatchPayAuth() {
                     setLoggedInUser(null)
                     setView('login')
                   }}
-                  className="group inline-flex items-center gap-1 font-semibold text-emerald-400 transition-colors duration-200 hover:text-emerald-300"
+                  className="group inline-flex items-center gap-1 font-semibold text-emerald-600 transition-colors duration-200 hover:text-emerald-700 dark:text-emerald-400 dark:hover:text-emerald-300"
                 >
                   Login
                   <IconArrowRight className="h-3.5 w-3.5 transition-transform duration-200 group-hover:translate-x-0.5" />
@@ -985,21 +1109,21 @@ export default function WatchPayAuth() {
           {/* ========================== OTP VIEW ========================== */}
           {view === 'otp' && (
             <AuthCard>
-              <h2 className="text-center text-[25px] font-extrabold leading-tight tracking-tight text-white">
+              <h2 className="text-center text-[25px] font-extrabold leading-tight tracking-tight text-[var(--wp-heading)]">
                 Verify{' '}
                 <span className="bg-gradient-to-b from-[#4DF7B8] to-[#00B978] bg-clip-text text-transparent [filter:drop-shadow(0_0_12px_rgba(0,208,132,0.4))]">
                   OTP
                 </span>
               </h2>
-              <p className="mt-1.5 text-center text-[13.5px] text-[#8A94A6]">
+              <p className="mt-1.5 text-center text-[13.5px] text-[var(--wp-muted)]">
                 Enter the 6-digit code sent to{' '}
-                <span className="font-semibold text-slate-200">+91 {formattedMobile}</span>
+                <span className="font-semibold text-[var(--wp-text)]">+91 {formattedMobile}</span>
               </p>
 
               <StepIndicator active={2} />
 
               <div className="flex justify-center">
-                <span className="rounded-full border border-emerald-400/30 bg-emerald-400/[0.08] px-3.5 py-1.5 text-[11px] font-semibold tracking-wide text-emerald-300">
+                <span className="rounded-full border border-emerald-400/30 bg-emerald-400/[0.08] px-3.5 py-1.5 text-[11px] font-semibold tracking-wide text-emerald-700 dark:text-emerald-300">
                   Demo OTP: 123456
                 </span>
               </div>
@@ -1048,7 +1172,7 @@ export default function WatchPayAuth() {
               <button
                 type="button"
                 onClick={() => setView('register')}
-                className="mx-auto mt-4 flex items-center gap-1.5 text-[12px] font-medium text-[#5F6B7E] transition-colors duration-200 hover:text-emerald-300"
+                className="mx-auto mt-4 flex items-center gap-1.5 text-[12px] font-medium text-[var(--wp-muted-2)] transition-colors duration-200 hover:text-emerald-300"
               >
                 <IconArrowLeft className="h-3.5 w-3.5" />
                 Change details
@@ -1061,15 +1185,15 @@ export default function WatchPayAuth() {
             <AuthCard>
               <div className="flex flex-col items-center py-3">
                 <SuccessCheck />
-                <h2 className="mt-5 text-center text-[25px] font-extrabold leading-tight tracking-tight text-white">
+                <h2 className="mt-5 text-center text-[25px] font-extrabold leading-tight tracking-tight text-[var(--wp-heading)]">
                   Account{' '}
                   <span className="bg-gradient-to-b from-[#4DF7B8] to-[#00B978] bg-clip-text text-transparent [filter:drop-shadow(0_0_12px_rgba(0,208,132,0.4))]">
                     Created!
                   </span>
                 </h2>
-                <p className="mt-2 max-w-[260px] text-center text-[13.5px] leading-relaxed text-[#8A94A6]">
+                <p className="mt-2 max-w-[260px] text-center text-[13.5px] leading-relaxed text-[var(--wp-muted)]">
                   Welcome to WatchPay,{' '}
-                  <span className="font-semibold text-emerald-400">{createdUser}</span>! Your
+                  <span className="font-semibold text-emerald-600 dark:text-emerald-400">{createdUser}</span>! Your
                   account is ready — start watching &amp; earning.
                 </p>
                 <button type="button" onClick={goLoginFromSuccess} className={`${primaryBtn} mt-6`}>
@@ -1090,15 +1214,15 @@ export default function WatchPayAuth() {
               {loggedInUser ? (
                 <div className="flex flex-col items-center py-3">
                   <SuccessCheck />
-                  <h2 className="mt-5 text-center text-[25px] font-extrabold leading-tight tracking-tight text-white">
+                  <h2 className="mt-5 text-center text-[25px] font-extrabold leading-tight tracking-tight text-[var(--wp-heading)]">
                     Welcome{' '}
                     <span className="bg-gradient-to-b from-[#4DF7B8] to-[#00B978] bg-clip-text text-transparent [filter:drop-shadow(0_0_12px_rgba(0,208,132,0.4))]">
                       Back!
                     </span>
                   </h2>
-                  <p className="mt-2 text-center text-[13.5px] text-[#8A94A6]">
+                  <p className="mt-2 text-center text-[13.5px] text-[var(--wp-muted)]">
                     You are logged in as{' '}
-                    <span className="font-semibold text-emerald-400">{loggedInUser}</span>.
+                    <span className="font-semibold text-emerald-600 dark:text-emerald-400">{loggedInUser}</span>.
                   </p>
                   <button
                     type="button"
@@ -1106,20 +1230,20 @@ export default function WatchPayAuth() {
                       setLoggedInUser(null)
                       setLoginValues((v) => ({ ...v, password: '' }))
                     }}
-                    className="mt-6 flex h-[46px] w-full items-center justify-center rounded-[14px] border border-white/10 bg-white/[0.03] text-[14px] font-semibold text-slate-200 transition-all duration-200 hover:border-emerald-400/40 hover:bg-emerald-400/10 hover:text-emerald-300 active:scale-[0.985]"
+                    className="mt-6 flex h-[46px] w-full items-center justify-center rounded-[14px] border border-[var(--wp-border)] bg-[var(--wp-chip)] text-[14px] font-semibold text-[var(--wp-text)] transition-all duration-200 hover:border-emerald-400/40 hover:bg-emerald-400/10 hover:text-emerald-300 active:scale-[0.985]"
                   >
                     Logout
                   </button>
                 </div>
               ) : (
                 <>
-                  <h2 className="text-center text-[25px] font-extrabold leading-tight tracking-tight text-white">
+                  <h2 className="text-center text-[25px] font-extrabold leading-tight tracking-tight text-[var(--wp-heading)]">
                     Welcome{' '}
                     <span className="bg-gradient-to-b from-[#4DF7B8] to-[#00B978] bg-clip-text text-transparent [filter:drop-shadow(0_0_12px_rgba(0,208,132,0.4))]">
                       Back
                     </span>
                   </h2>
-                  <p className="mt-1.5 text-center text-[13.5px] text-[#8A94A6]">
+                  <p className="mt-1.5 text-center text-[13.5px] text-[var(--wp-muted)]">
                     Login to your WatchPay account
                   </p>
 
@@ -1128,20 +1252,20 @@ export default function WatchPayAuth() {
                     <div>
                       <label
                         htmlFor="wp-login-mobile"
-                        className="mb-2 flex items-center gap-2 text-[13px] font-semibold text-slate-200"
+                        className="mb-2 flex items-center gap-2 text-[13px] font-semibold text-[var(--wp-text)]"
                       >
                         <IconSmartphone className="h-3.5 w-3.5 text-emerald-400" />
                         Mobile Number
                       </label>
                       <div
-                        className={`flex h-[54px] w-full items-center rounded-[13px] border bg-[#0A101C] transition-all duration-200 focus-within:bg-[#0B1322] ${
+                        className={`flex h-[54px] w-full items-center rounded-[13px] border bg-[var(--wp-input)] transition-all duration-200 focus-within:bg-[var(--wp-input-focus)] ${
                           loginError && loginError.includes('mobile')
                             ? 'border-red-400/60 focus-within:shadow-[0_0_0_3px_rgba(248,113,113,0.14)]'
-                            : 'border-white/10 focus-within:border-emerald-400/60 focus-within:shadow-[0_0_0_3px_rgba(0,208,132,0.14)]'
+                            : 'border-[var(--wp-border)] focus-within:border-emerald-400/60 focus-within:shadow-[0_0_0_3px_rgba(0,208,132,0.14)]'
                         }`}
                       >
-                        <div className="flex h-full items-center gap-1.5 border-r border-white/10 pl-4 pr-3">
-                          <span className="text-[14px] font-bold text-slate-50">IN</span>
+                        <div className="flex h-full items-center gap-1.5 border-r border-[var(--wp-border)] pl-4 pr-3">
+                          <span className="text-[14px] font-bold text-[var(--wp-text)]">IN</span>
                           <span className="text-[14px] font-semibold text-emerald-400">+91</span>
                         </div>
                         <input
@@ -1159,7 +1283,7 @@ export default function WatchPayAuth() {
                               mobile: e.target.value.replace(/\D/g, '').slice(0, 10),
                             }))
                           }
-                          className="h-full w-full flex-1 bg-transparent pl-3.5 pr-4 text-[16px] text-slate-50 outline-none placeholder:text-[#5A6478]"
+                          className="h-full w-full flex-1 bg-transparent pl-3.5 pr-4 text-[16px] text-[var(--wp-text)] outline-none placeholder:text-[var(--wp-muted-2)]"
                         />
                       </div>
                     </div>
@@ -1168,13 +1292,13 @@ export default function WatchPayAuth() {
                     <div>
                       <label
                         htmlFor="wp-login-password"
-                        className="mb-2 flex items-center gap-2 text-[13px] font-semibold text-slate-200"
+                        className="mb-2 flex items-center gap-2 text-[13px] font-semibold text-[var(--wp-text)]"
                       >
                         <IconLock className="h-3.5 w-3.5 text-emerald-400" />
                         Password
                       </label>
                       <div className="group relative">
-                        <IconLock className="pointer-events-none absolute left-4 top-1/2 h-[17px] w-[17px] -translate-y-1/2 text-[#4E5A6E] transition-colors duration-200 group-focus-within:text-emerald-400" />
+                        <IconLock className="pointer-events-none absolute left-4 top-1/2 h-[17px] w-[17px] -translate-y-1/2 text-[var(--wp-faint)] transition-colors duration-200 group-focus-within:text-emerald-400" />
                         <input
                           id="wp-login-password"
                           name="password"
@@ -1191,7 +1315,7 @@ export default function WatchPayAuth() {
                           type="button"
                           onClick={() => setShowLoginPassword((v) => !v)}
                           aria-label={showLoginPassword ? 'Hide password' : 'Show password'}
-                          className="absolute right-2 top-1/2 grid h-9 w-9 -translate-y-1/2 place-items-center rounded-lg text-[#5A6478] transition-colors duration-200 hover:bg-emerald-400/10 hover:text-emerald-300"
+                          className="absolute right-2 top-1/2 grid h-9 w-9 -translate-y-1/2 place-items-center rounded-lg text-[var(--wp-muted-2)] transition-colors duration-200 hover:bg-emerald-400/10 hover:text-emerald-300"
                         >
                           {showLoginPassword ? (
                             <IconEyeOff className="h-[18px] w-[18px]" />
@@ -1228,19 +1352,19 @@ export default function WatchPayAuth() {
                   </form>
 
                   <div className="my-4 flex items-center gap-3" role="separator" aria-hidden="true">
-                    <span className="h-px flex-1 bg-gradient-to-r from-transparent to-white/[0.12]" />
-                    <span className="text-[10px] font-bold tracking-[0.24em] text-[#5A6478]">
+                    <span className="h-px flex-1 bg-gradient-to-r from-transparent to-[var(--wp-border-strong)]" />
+                    <span className="text-[10px] font-bold tracking-[0.24em] text-[var(--wp-muted-2)]">
                       NEW TO WATCHPAY?
                     </span>
-                    <span className="h-px flex-1 bg-gradient-to-l from-transparent to-white/[0.12]" />
+                    <span className="h-px flex-1 bg-gradient-to-l from-transparent to-[var(--wp-border-strong)]" />
                   </div>
 
-                  <p className="text-center text-[13.5px] text-[#8A94A6]">
+                  <p className="text-center text-[13.5px] text-[var(--wp-muted)]">
                     Create a new account?{' '}
                     <button
                       type="button"
                       onClick={goRegisterFromLogin}
-                      className="group inline-flex items-center gap-1 font-semibold text-emerald-400 transition-colors duration-200 hover:text-emerald-300"
+                      className="group inline-flex items-center gap-1 font-semibold text-emerald-600 transition-colors duration-200 hover:text-emerald-700 dark:text-emerald-400 dark:hover:text-emerald-300"
                     >
                       Register
                       <IconArrowRight className="h-3.5 w-3.5 transition-transform duration-200 group-hover:translate-x-0.5" />
@@ -1255,14 +1379,15 @@ export default function WatchPayAuth() {
           {view === 'home' && (
             <LiveOrdersHome
               username={loggedInUser ?? 'Player'}
-              dim={dim}
-              onToggleDim={() => setDim((v) => !v)}
+              light={light}
+              onToggleLight={() => setLight((v) => !v)}
               onLogout={async () => {
                 try {
                   await fetch('/api/auth/logout', { method: 'POST' })
                 } catch {
                   // cookie clear is best-effort — continue with local logout
                 }
+                authedRef.current = false
                 setLoggedInUser(null)
                 setLoginValues((v) => ({ ...v, password: '' }))
                 setView('login')

@@ -65,13 +65,13 @@ function toUiOrder(raw: ApiOrder, enterDelay?: number): UiOrder {
  */
 export function LiveOrdersHome({
   username,
-  dim,
-  onToggleDim,
+  light,
+  onToggleLight,
   onLogout,
 }: {
   username: string
-  dim: boolean
-  onToggleDim: () => void
+  light: boolean
+  onToggleLight: () => void
   onLogout: () => void
 }) {
   const { toast } = useToast()
@@ -90,6 +90,8 @@ export function LiveOrdersHome({
   const localSeqRef = useRef(0)
   const timersRef = useRef<ReturnType<typeof setTimeout>[]>([])
   const aliveRef = useRef(true)
+  /** alternates -1 / 1 so consecutive sold-out cards swipe opposite ways */
+  const exitFlipRef = useRef<1 | -1>(1)
 
   /** tracked setTimeout — auto-cleaned on unmount, ignored if already gone */
   const later = useCallback((fn: () => void, ms: number) => {
@@ -157,7 +159,8 @@ export function LiveOrdersHome({
   /* ----------------------- replacement after expiry --------------------- */
 
   const insertFresh = useCallback((fresh: UiOrder) => {
-    setOrders((prev) => (prev.some((o) => o.id === fresh.id) ? prev : [...prev, fresh]))
+    // replacements appear at the TOP of the list
+    setOrders((prev) => (prev.some((o) => o.id === fresh.id) ? prev : [fresh, ...prev]))
   }, [])
 
   /**
@@ -235,10 +238,17 @@ export function LiveOrdersHome({
       for (const o of next) {
         if (o.status === 'soldout' && !expiredRef.current.has(o.id)) {
           expiredRef.current.add(o.id)
+          // alternate the swipe-away direction per expiry
+          const exitDir = exitFlipRef.current
+          exitFlipRef.current = exitDir === 1 ? -1 : 1
           void requestReplacement(o.id)
           later(() => {
             setOrders((prev) =>
-              prev.map((x) => (x.id === o.id && x.status === 'soldout' ? { ...x, status: 'exit' as const } : x))
+              prev.map((x) =>
+                x.id === o.id && x.status === 'soldout'
+                  ? { ...x, status: 'exit' as const, exitDir }
+                  : x
+              )
             )
           }, SOLDOUT_MS)
           later(() => {
@@ -335,9 +345,9 @@ export function LiveOrdersHome({
     <div className="flex flex-col gap-3 pb-28">
       <HomeHeader
         balance={balance}
-        dim={dim}
+        light={light}
         username={username}
-        onToggleDim={onToggleDim}
+        onToggleLight={onToggleLight}
         onLogout={onLogout}
       />
       <WithdrawalTicker />
@@ -354,7 +364,7 @@ export function LiveOrdersHome({
             />
           ))
         ) : visible.length === 0 ? (
-          <p className="py-8 text-center text-[13px] text-[#8A94A6]">
+          <p className="py-8 text-center text-[13px] text-[var(--wp-muted)]">
             All orders are sold out — fresh ones are on the way…
           </p>
         ) : (

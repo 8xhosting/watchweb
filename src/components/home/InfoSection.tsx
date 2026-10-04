@@ -51,19 +51,19 @@ function InfoCard({
 }) {
   const [open, setOpen] = useState(defaultOpen)
   return (
-    <section className="overflow-hidden rounded-2xl border border-white/[0.07] bg-[#0A101C]/75 backdrop-blur-xl">
+    <section className="overflow-hidden rounded-2xl border border-[var(--wp-border)] bg-[var(--wp-card)] backdrop-blur-xl">
       <button
         type="button"
         aria-expanded={open}
         onClick={() => setOpen((v) => !v)}
-        className="flex w-full items-center gap-3 p-3.5 text-left transition-colors duration-200 hover:bg-white/[0.02]"
+        className="flex w-full items-center gap-3 p-3.5 text-left transition-colors duration-200 hover:bg-[var(--wp-hover)]"
       >
         <span className="grid h-11 w-11 shrink-0 place-items-center rounded-[13px] border border-emerald-400/25 bg-gradient-to-b from-emerald-400/[0.14] to-emerald-400/[0.04] text-emerald-300 shadow-[inset_0_1px_0_rgba(255,255,255,0.08)]">
           {icon}
         </span>
-        <span className="min-w-0 flex-1 text-[15.5px] font-bold text-white">{title}</span>
+        <span className="min-w-0 flex-1 text-[15.5px] font-bold text-[var(--wp-heading)]">{title}</span>
         <IconChevronRight
-          className={`h-4 w-4 shrink-0 text-[#5A6478] transition-transform duration-300 ${
+          className={`h-4 w-4 shrink-0 text-[var(--wp-muted-2)] transition-transform duration-300 ${
             open ? 'rotate-90' : ''
           }`}
         />
@@ -99,7 +99,7 @@ export function InfoSections() {
       <InfoCard icon={<IconFileText className="h-5 w-5" />} title="How to Place an Order">
         <ol className="flex flex-col gap-2">
           {PLACE_ORDER_STEPS.map((step, i) => (
-            <li key={i} className="flex items-start gap-2 text-[12px] leading-relaxed text-[#AEB7C6]">
+            <li key={i} className="flex items-start gap-2 text-[12px] leading-relaxed text-[var(--wp-text)]">
               <StepBullet n={i + 1} />
               <span>{step}</span>
             </li>
@@ -110,10 +110,10 @@ export function InfoSections() {
       <InfoCard icon={<IconChartBar className="h-5 w-5" />} title="How to Earn with WatchPay">
         <ol className="flex flex-col gap-2.5">
           {EARN_STEPS.map((step, i) => (
-            <li key={i} className="flex items-start gap-2 text-[12px] leading-relaxed text-[#AEB7C6]">
+            <li key={i} className="flex items-start gap-2 text-[12px] leading-relaxed text-[var(--wp-text)]">
               <StepBullet n={i + 1} />
               <span>
-                <span className="font-semibold text-slate-100">{step.title}</span> — {step.text}
+                <span className="font-semibold text-[var(--wp-text)]">{step.title}</span> — {step.text}
               </span>
             </li>
           ))}
@@ -128,7 +128,7 @@ export function InfoSections() {
           {WITHDRAWAL_FEATURES.map(({ icon: FeatureIcon, label }) => (
             <li
               key={label}
-              className="flex items-center gap-2 rounded-xl border border-white/[0.06] bg-white/[0.03] px-2.5 py-2 text-[11px] font-semibold text-[#C6CEDA]"
+              className="flex items-center gap-2 rounded-xl border border-[var(--wp-border)] bg-[var(--wp-chip)] px-2.5 py-2 text-[11px] font-semibold text-[var(--wp-text)]"
             >
               <FeatureIcon className="h-4 w-4 shrink-0 text-emerald-400" />
               <span className="leading-tight">{label}</span>

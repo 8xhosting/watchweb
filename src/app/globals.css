@@ -250,3 +250,136 @@ html {
 input {
   caret-color: #00d084;
 }
+
+/* ================= HOME — LIVE ORDERS ANIMATIONS ================= */
+
+/* withdrawal ticker — continuous marquee (content duplicated 2x, -50% loop) */
+@keyframes wp-ticker {
+  from {
+    transform: translateX(0);
+  }
+  to {
+    transform: translateX(-50%);
+  }
+}
+.wp-ticker {
+  animation: wp-ticker 26s linear infinite;
+}
+.wp-ticker-mask {
+  mask-image: linear-gradient(
+    to right,
+    transparent,
+    black 12px,
+    black calc(100% - 12px),
+    transparent
+  );
+}
+
+/* order card entrance — fade + rise */
+@keyframes wp-order-in {
+  from {
+    opacity: 0;
+    transform: translateY(14px) scale(0.97);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+.wp-order-in {
+  animation: wp-order-in 0.45s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+/* order card exit — fade + slide away (defined AFTER wp-order-in so it wins) */
+@keyframes wp-order-out {
+  to {
+    opacity: 0;
+    transform: translateX(30px) scale(0.96);
+  }
+}
+.wp-order-out {
+  animation: wp-order-out 0.42s cubic-bezier(0.4, 0, 0.7, 0.2) forwards !important;
+}
+
+/* sold-out red warning glow */
+@keyframes wp-soldout-glow {
+  0%,
+  100% {
+    box-shadow:
+      0 0 0 1px rgba(239, 68, 68, 0.22),
+      0 0 22px -6px rgba(239, 68, 68, 0.35);
+  }
+  50% {
+    box-shadow:
+      0 0 0 1px rgba(239, 68, 68, 0.45),
+      0 0 34px -4px rgba(239, 68, 68, 0.6);
+  }
+}
+.wp-soldout-card {
+  animation: wp-soldout-glow 1s ease-in-out infinite;
+}
+
+/* skeleton shimmer for the initial loading state */
+@keyframes wp-shimmer {
+  from {
+    background-position: 200% 0;
+  }
+  to {
+    background-position: -200% 0;
+  }
+}
+.wp-shimmer {
+  background: linear-gradient(
+    100deg,
+    rgba(255, 255, 255, 0.03) 40%,
+    rgba(0, 208, 132, 0.09) 50%,
+    rgba(255, 255, 255, 0.03) 60%
+  );
+  background-size: 200% 100%;
+  animation: wp-shimmer 1.5s linear infinite;
+}
+
+/* pulsing live dot */
+@keyframes wp-live-pulse {
+  0%,
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.5;
+    transform: scale(0.8);
+  }
+}
+.wp-live-dot {
+  animation: wp-live-pulse 1.6s ease-in-out infinite;
+}
+
+/* glowing lightning artwork */
+@keyframes wp-bolt-glow {
+  0%,
+  100% {
+    filter: drop-shadow(0 0 8px rgba(0, 224, 145, 0.5));
+  }
+  50% {
+    filter: drop-shadow(0 0 20px rgba(0, 224, 145, 0.95));
+  }
+}
+.wp-bolt {
+  animation: wp-bolt-glow 2.4s ease-in-out infinite;
+}
+
+/* respect reduced-motion preferences */
+@media (prefers-reduced-motion: reduce) {
+  .wp-ticker,
+  .wp-live-dot,
+  .wp-bolt,
+  .wp-soldout-card,
+  .wp-shimmer {
+    animation: none;
+  }
+  .wp-order-in,
+  .wp-order-out {
+    animation-duration: 0.01s;
+  }
+}

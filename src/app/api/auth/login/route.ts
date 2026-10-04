@@ -1,10 +1,12 @@
 import { NextResponse } from 'next/server'
 import { db } from '@/lib/db'
 import { MOBILE_RE, verifyPassword } from '@/lib/auth'
+import { SESSION_COOKIE, SESSION_COOKIE_OPTIONS, createSessionToken } from '@/lib/session'
 
 /**
  * POST /api/auth/login
  * Verifies mobile + password against the users saved in the DB.
+ * On success sets an httpOnly signed session cookie (30 days).
  */
 export async function POST(req: Request) {
   try {
@@ -30,7 +32,9 @@ export async function POST(req: Request) {
       )
     }
 
-    return NextResponse.json({ ok: true, user: { username: user.username } })
+    const res = NextResponse.json({ ok: true, user: { username: user.username } })
+    res.cookies.set(SESSION_COOKIE, createSessionToken(user.id), SESSION_COOKIE_OPTIONS)
+    return res
   } catch {
     return NextResponse.json({ error: 'Something went wrong. Please try again.' }, { status: 500 })
   }

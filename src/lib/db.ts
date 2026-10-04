@@ -11,3 +11,4 @@ export const db =
   })
 
 if (process.env.NODE_ENV !== 'production') globalForPrisma.prisma = db
+// module touched: force dev server to re-evaluate the regenerated Prisma client (walletBalance field)

@@ -1,7 +1,8 @@
 'use client'
 
-import { useRef, useState, type FormEvent, type ReactNode } from 'react'
+import { useEffect, useRef, useState, type FormEvent, type ReactNode } from 'react'
 import { useToast } from '@/hooks/use-toast'
+import { LiveOrdersHome } from '@/components/home/LiveOrdersHome'
 
 /* ------------------------------------------------------------------ */
 /*  Inline SVG icon set (Lucide-style strokes, zero dependencies)      */
@@ -482,7 +483,7 @@ const MOBILE_RE = /^\d{10}$/
 type FieldKey = 'username' | 'mobile' | 'password' | 'confirm'
 type FormValues = Record<FieldKey, string>
 type FormErrors = Partial<Record<FieldKey, string>>
-type View = 'register' | 'otp' | 'success' | 'login'
+type View = 'register' | 'otp' | 'success' | 'login' | 'home'
 
 function validate(v: FormValues): FormErrors {
   const e: FormErrors = {}
@@ -535,6 +536,26 @@ export default function WatchPayAuth() {
   const [loginError, setLoginError] = useState<string | null>(null)
   const [loggingIn, setLoggingIn] = useState(false)
   const [loggedInUser, setLoggedInUser] = useState<string | null>(null)
+
+  /* Restore session on refresh — a valid session cookie goes straight Home. */
+  useEffect(() => {
+    let cancelled = false
+    ;(async () => {
+      try {
+        const res = await fetch('/api/auth/me', { cache: 'no-store' })
+        const data = await res.json()
+        if (!cancelled && res.ok && data?.authenticated && data?.username) {
+          setLoggedInUser(data.username)
+          setView('home')
+        }
+      } catch {
+        // offline / first visit — stay on the register view
+      }
+    })()
+    return () => {
+      cancelled = true
+    }
+  }, [])
 
   const strength = values.password
     ? (() => {
@@ -664,6 +685,7 @@ export default function WatchPayAuth() {
         return
       }
       setLoggedInUser(data.user?.username ?? '')
+      setView('home')
       toast({
         title: 'Login successful',
         description: `Welcome back, ${data.user?.username ?? ''}!`,
@@ -706,21 +728,23 @@ export default function WatchPayAuth() {
       <div className="relative z-10 mx-auto flex min-h-svh w-full max-w-[430px] flex-col px-5 pb-[max(18px,env(safe-area-inset-bottom))] pt-[max(12px,env(safe-area-inset-top))]">
         <div className="my-auto">
           {/* ============================ HEADER ============================ */}
-          <header className="relative mb-4 flex flex-col items-center">
-            <button
-              type="button"
-              aria-label={dim ? 'Switch to dark mode' : 'Switch to dim mode'}
-              onClick={() => setDim((v) => !v)}
-              className="absolute right-0 top-0 grid h-10 w-10 place-items-center rounded-full border border-white/10 bg-white/[0.04] text-slate-300 transition-all duration-200 hover:border-emerald-400/40 hover:bg-emerald-400/10 hover:text-emerald-300 active:scale-95"
-            >
-              {dim ? (
-                <IconSun className="h-[18px] w-[18px]" />
-              ) : (
-                <IconMoon className="h-[18px] w-[18px]" />
-              )}
-            </button>
-            <Logo />
-          </header>
+          {view !== 'home' && (
+            <header className="relative mb-4 flex flex-col items-center">
+              <button
+                type="button"
+                aria-label={dim ? 'Switch to dark mode' : 'Switch to dim mode'}
+                onClick={() => setDim((v) => !v)}
+                className="absolute right-0 top-0 grid h-10 w-10 place-items-center rounded-full border border-white/10 bg-white/[0.04] text-slate-300 transition-all duration-200 hover:border-emerald-400/40 hover:bg-emerald-400/10 hover:text-emerald-300 active:scale-95"
+              >
+                {dim ? (
+                  <IconSun className="h-[18px] w-[18px]" />
+                ) : (
+                  <IconMoon className="h-[18px] w-[18px]" />
+                )}
+              </button>
+              <Logo />
+            </header>
+          )}
 
           {/* ======================== REGISTER VIEW ======================== */}
           {view === 'register' && (
@@ -1225,6 +1249,25 @@ export default function WatchPayAuth() {
                 </>
               )}
             </AuthCard>
+          )}
+
+          {/* ========================== HOME VIEW ========================== */}
+          {view === 'home' && (
+            <LiveOrdersHome
+              username={loggedInUser ?? 'Player'}
+              dim={dim}
+              onToggleDim={() => setDim((v) => !v)}
+              onLogout={async () => {
+                try {
+                  await fetch('/api/auth/logout', { method: 'POST' })
+                } catch {
+                  // cookie clear is best-effort — continue with local logout
+                }
+                setLoggedInUser(null)
+                setLoginValues((v) => ({ ...v, password: '' }))
+                setView('login')
+              }}
+            />
           )}
         </div>
       </div>

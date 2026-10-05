@@ -254,6 +254,95 @@ export function StatusChip({ status }: { status: string }) {
   )
 }
 
+/* ---------------------------- AreaChart ----------------------------- */
+
+/** Smooth gradient area chart for 30-day growth series (hand-rolled SVG). */
+export function AreaChart({
+  values,
+  labels,
+  height = 130,
+  stroke = '#00D084',
+}: {
+  values: number[]
+  labels?: string[]
+  height?: number
+  stroke?: string
+}) {
+  if (values.length < 2) values = [0, ...values, 0]
+  const max = Math.max(...values, 1)
+  const min = Math.min(...values, 0)
+  const range = max - min || 1
+  const W = 300
+  const H = 90
+  const pts = values.map((v, i) => {
+    const x = (i / (values.length - 1)) * W
+    const y = H - 4 - ((v - min) / range) * (H - 10)
+    return [x, y] as const
+  })
+  const line = pts.map(([x, y], i) => `${i === 0 ? 'M' : 'L'}${x.toFixed(1)},${y.toFixed(1)}`).join(' ')
+  const area = `${line} L${W},${H} L0,${H} Z`
+  const id = `area-${stroke.replace('#', '')}-${values.length}`
+  const last = pts[pts.length - 1]
+  return (
+    <div className="w-full" style={{ height }}>
+      <svg viewBox={`0 0 ${W} ${H}`} preserveAspectRatio="none" className="h-full w-full" aria-hidden="true">
+        <defs>
+          <linearGradient id={id} x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stopColor={stroke} stopOpacity="0.4" />
+            <stop offset="100%" stopColor={stroke} stopOpacity="0.02" />
+          </linearGradient>
+        </defs>
+        <path d={area} fill={`url(#${id})`} />
+        <path
+          d={line}
+          fill="none"
+          stroke={stroke}
+          strokeWidth="2"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          vectorEffect="non-scaling-stroke"
+        />
+        <circle cx={last[0]} cy={last[1]} r="3" fill={stroke} className="wp-live-dot" />
+      </svg>
+      {labels && labels.length ? (
+        <div className="mt-1 flex justify-between text-[8.5px] font-bold uppercase tracking-wide text-[var(--wp-faint)]">
+          <span>{labels[0]}</span>
+          <span>{labels[Math.floor(labels.length / 2)]}</span>
+          <span>{labels[labels.length - 1]}</span>
+        </div>
+      ) : null}
+    </div>
+  )
+}
+
+/* ------------------------------ TxChip ------------------------------ */
+
+const TX_META: Record<string, { label: string; cls: string; sign: '+' | '-' | '' }> = {
+  credit: { label: 'CREDIT', cls: 'border-emerald-400/40 bg-emerald-400/10 text-emerald-300', sign: '+' },
+  order_bonus: { label: 'BONUS', cls: 'border-emerald-400/40 bg-emerald-400/10 text-emerald-300', sign: '+' },
+  withdrawal_refund: { label: 'REFUND', cls: 'border-sky-400/40 bg-sky-400/10 text-sky-300', sign: '+' },
+  debit: { label: 'DEBIT', cls: 'border-amber-400/40 bg-amber-400/10 text-amber-300', sign: '-' },
+  withdrawal_hold: { label: 'HOLD', cls: 'border-amber-400/40 bg-amber-400/10 text-amber-300', sign: '-' },
+  withdrawal_paid: { label: 'PAID', cls: 'border-red-400/40 bg-red-400/10 text-red-300', sign: '-' },
+}
+
+export function TxChip({ type }: { type: string }) {
+  const meta = TX_META[type] ?? {
+    label: type.toUpperCase(),
+    cls: 'border-white/10 bg-white/[0.04] text-[var(--wp-muted)]',
+    sign: '' as const,
+  }
+  return (
+    <span className={`inline-flex h-6 shrink-0 items-center rounded-md border px-2 text-[8.5px] font-black tracking-wide ${meta.cls}`}>
+      {meta.label}
+    </span>
+  )
+}
+
+export function txSign(type: string): '+' | '-' {
+  return (TX_META[type]?.sign === '+') ? '+' : '-'
+}
+
 /* ------------------------------ Misc -------------------------------- */
 
 export function EmptyState({ icon, title, sub }: { icon?: ReactNode; title: string; sub?: string }) {

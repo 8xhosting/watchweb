@@ -1,6 +1,6 @@
 'use client'
 
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useState, type ReactNode } from 'react'
 import { BarChart, CountUp, Donut, EmptyState, KpiCard, Sparkline, StatusChip, timeAgo } from './widgets'
 
 interface Overview {
@@ -33,6 +33,12 @@ interface Overview {
   }
 }
 
+interface SecurityLite {
+  payout: { usagePct: number; pendingAmount: number }
+  adminAuth: { failedLogins: unknown[]; lockouts48h: number }
+  risks: { bannedWithBalance: unknown[]; stuckOrders: unknown[]; neverLogged: number }
+}
+
 const inr = (v: number) => `₹${Math.round(v).toLocaleString('en-IN')}`
 
 /**
@@ -41,6 +47,7 @@ const inr = (v: number) => `₹${Math.round(v).toLocaleString('en-IN')}`
  */
 export function AdminDashboard({ onGoSection }: { onGoSection: (s: string) => void }) {
   const [data, setData] = useState<Overview | null>(null)
+  const [sec, setSec] = useState<SecurityLite | null>(null)
   const [error, setError] = useState(false)
   const [refreshedAt, setRefreshedAt] = useState<Date | null>(null)
 
@@ -60,11 +67,26 @@ export function AdminDashboard({ onGoSection }: { onGoSection: (s: string) => vo
     }
   }, [])
 
+  const loadSec = useCallback(async () => {
+    try {
+      const res = await fetch('/api/admin/security', { cache: 'no-store' })
+      const json = await res.json().catch(() => null)
+      if (res.ok && json?.ok) setSec(json as SecurityLite)
+    } catch {
+      // ignore
+    }
+  }, [])
+
   useEffect(() => {
     void load()
+    void loadSec()
     const t = setInterval(load, 15000) // live refresh every 15s
-    return () => clearInterval(t)
-  }, [load])
+    const ts = setInterval(loadSec, 30000)
+    return () => {
+      clearInterval(t)
+      clearInterval(ts)
+    }
+  }, [load, loadSec])
 
   if (error && !data) {
     return (
@@ -87,6 +109,70 @@ export function AdminDashboard({ onGoSection }: { onGoSection: (s: string) => vo
 
   const healthGood = data.dbLatency < 800
 
+  /* risk alerts — live from the Security Centre */
+  const alerts: Array<{ label: string; detail: string; tone: 'red' | 'amber'; go: string }> = []
+  if (sec) {
+    if (sec.payout.usagePct >= 60)
+      alerts.push({ label: 'Payout cap', detail: `${sec.payout.usagePct}% of daily limit used`, tone: sec.payout.usagePct >= 90 ? 'red' : 'amber', go: 'security' })
+    if (sec.adminAuth.failedLogins.length > 0)
+      alerts.push({ label: 'Auth attacks', detail: `${sec.adminAuth.failedLogins.length} failed admin login(s) 48h`, tone: 'red', go: 'security' })
+    if (sec.risks.bannedWithBalance.length > 0)
+      alerts.push({ label: 'Banned wallets', detail: `${sec.risks.bannedWithBalance.length} banned user(s) hold balance`, tone: 'amber', go: 'users' })
+    if (sec.risks.stuckOrders.length > 0)
+      alerts.push({ label: 'Stuck orders', detail: `${sec.risks.stuckOrders.length} processing order(s) 1h+`, tone: 'amber', go: 'orders' })
+  }
+
+  const quickActions: Array<{ label: string; go: string; icon: ReactNode }> = [
+    {
+      label: 'Broadcast',
+      go: 'control',
+      icon: (
+        <svg viewBox="0 0 24 24" className="h-3.5 w-3.5" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+          <path d="m3 11 18-5v12L3 14v-3z" />
+        </svg>
+      ),
+    },
+    {
+      label: 'Payout queue',
+      go: 'withdrawals',
+      icon: (
+        <svg viewBox="0 0 24 24" className="h-3.5 w-3.5" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+          <path d="M12 3v12" />
+          <path d="m7 10 5 5 5-5" />
+        </svg>
+      ),
+    },
+    {
+      label: 'Ledger',
+      go: 'ledger',
+      icon: (
+        <svg viewBox="0 0 24 24" className="h-3.5 w-3.5" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+          <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z" />
+        </svg>
+      ),
+    },
+    {
+      label: 'Analytics',
+      go: 'analytics',
+      icon: (
+        <svg viewBox="0 0 24 24" className="h-3.5 w-3.5" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+          <path d="M3 3v18h18" />
+          <path d="M7 16v-5" />
+          <path d="M12 16V8" />
+        </svg>
+      ),
+    },
+    {
+      label: 'Security',
+      go: 'security',
+      icon: (
+        <svg viewBox="0 0 24 24" className="h-3.5 w-3.5" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+          <path d="M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 0 1-.67-.01C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.24-2.72a1.17 1.17 0 0 1 1.52 0C14.51 3.81 17 5 19 5a1 1 0 0 1 1 1Z" />
+        </svg>
+      ),
+    },
+  ]
+
   return (
     <div className="flex flex-col gap-4">
       {/* refresh strip */}
@@ -108,6 +194,61 @@ export function AdminDashboard({ onGoSection }: { onGoSection: (s: string) => vo
           </svg>
           Refresh
         </button>
+      </div>
+
+      {/* ============ QUICK ACTIONS + RISK ALERTS ============ */}
+      <div className="grid gap-3 lg:grid-cols-[1fr_1.4fr]">
+        <section className="wp-rise rounded-2xl border border-[var(--wp-border)] bg-[var(--wp-card)] p-3.5 backdrop-blur-xl">
+          <h2 className="text-[9.5px] font-bold uppercase tracking-[0.16em] text-[var(--wp-muted-2)]">Quick actions</h2>
+          <div className="mt-2.5 grid grid-cols-5 gap-1.5 sm:grid-cols-5">
+            {quickActions.map((a) => (
+              <button
+                key={a.label}
+                type="button"
+                onClick={() => onGoSection(a.go)}
+                className="flex h-[58px] flex-col items-center justify-center gap-1 rounded-xl border border-[var(--wp-border)] bg-[var(--wp-chip)] text-[var(--wp-muted)] transition-all duration-200 hover:border-emerald-400/40 hover:bg-emerald-400/10 hover:text-[var(--wp-accent-text)] active:scale-95"
+              >
+                {a.icon}
+                <span className="text-[8.5px] font-extrabold uppercase tracking-wide">{a.label}</span>
+              </button>
+            ))}
+          </div>
+        </section>
+
+        <section className="wp-rise rounded-2xl border border-[var(--wp-border)] bg-[var(--wp-card)] p-3.5 backdrop-blur-xl" style={{ animationDelay: '40ms' }}>
+          <div className="flex items-center justify-between gap-2">
+            <h2 className="text-[9.5px] font-bold uppercase tracking-[0.16em] text-[var(--wp-muted-2)]">Live risk alerts</h2>
+            <span className={`rounded-md px-2 py-0.5 text-[9px] font-black uppercase tracking-wide ${alerts.length ? 'bg-red-400/15 text-red-300' : 'bg-emerald-400/10 text-[var(--wp-accent-text)]'}`}>
+              {alerts.length ? `${alerts.length} active` : 'all clear'}
+            </span>
+          </div>
+          <div className="mt-2.5 flex flex-wrap gap-1.5">
+            {alerts.length === 0 ? (
+              <p className="py-2 text-[11px] text-[var(--wp-muted)]">
+                No threats detected — payout cap, admin auth, wallets and order pipeline are all healthy.
+              </p>
+            ) : (
+              alerts.map((a) => (
+                <button
+                  key={a.label}
+                  type="button"
+                  onClick={() => onGoSection(a.go)}
+                  className={`flex items-center gap-2 rounded-xl border px-2.5 py-1.5 text-left transition-all duration-200 hover:brightness-110 active:scale-95 ${
+                    a.tone === 'red'
+                      ? 'border-red-400/40 bg-red-400/10'
+                      : 'border-amber-400/40 bg-amber-400/10'
+                  }`}
+                >
+                  <span className={`h-1.5 w-1.5 rounded-full wp-live-dot ${a.tone === 'red' ? 'bg-red-400' : 'bg-amber-400'}`} />
+                  <span>
+                    <span className={`block text-[10.5px] font-black ${a.tone === 'red' ? 'text-red-300' : 'text-amber-300'}`}>{a.label}</span>
+                    <span className="block text-[9px] text-[var(--wp-muted-2)]">{a.detail}</span>
+                  </span>
+                </button>
+              ))
+            )}
+          </div>
+        </section>
       </div>
 
       {/* ===================== KPI ROW ===================== */}

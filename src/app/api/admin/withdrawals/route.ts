@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server'
 import { db } from '@/lib/db'
 import { getAdminFromRequest, adminUnauthorized } from '@/lib/admin-session'
 import { adminLog } from '@/lib/app-config'
+import { recordTx } from '@/lib/ledger'
 
 /**
  * GET   /api/admin/withdrawals?status=  — payout queue (newest first)
@@ -52,7 +53,7 @@ export async function PATCH(req: Request) {
 
     const w = await db.withdrawal.findUnique({
       where: { id },
-      include: { user: { select: { id: true, username: true } } },
+      include: { user: { select: { id: true, username: true, walletBalance: true } } },
     })
     if (!w) {
       return NextResponse.json({ ok: false, error: 'Withdrawal not found' }, { status: 404 })
@@ -66,6 +67,13 @@ export async function PATCH(req: Request) {
 
     if (action === 'paid') {
       await db.withdrawal.update({ where: { id }, data: { status: 'paid' } })
+      recordTx({
+        userId: w.userId,
+        type: 'withdrawal_paid',
+        amount: Number(w.amount),
+        balanceAfter: Number(w.user.walletBalance),
+        note: `${w.method.toUpperCase()} → ${w.user.username} · ${w.destination}`,
+      })
       void adminLog('withdrawal.paid', `₹${w.amount} → ${w.user.username} (${w.method})`)
       return NextResponse.json({ ok: true, status: 'paid' })
     }
@@ -77,9 +85,17 @@ export async function PATCH(req: Request) {
         select: { walletBalance: true },
       })
       if (user) {
+        const refunded = Number(user.walletBalance) + Number(w.amount)
         await db.user.update({
           where: { id: w.userId },
-          data: { walletBalance: Number(user.walletBalance) + Number(w.amount) },
+          data: { walletBalance: refunded },
+        })
+        recordTx({
+          userId: w.userId,
+          type: 'withdrawal_refund',
+          amount: Number(w.amount),
+          balanceAfter: refunded,
+          note: `rejected payout returned → ${w.user.username}`,
         })
       }
       await db.withdrawal.update({ where: { id }, data: { status: 'rejected' } })

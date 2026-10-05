@@ -9,6 +9,7 @@ interface Config {
   orderMax: number
   maintenance: boolean
   announcement: string
+  disabledPlatforms: string[]
 }
 
 interface LogRow {
@@ -20,10 +21,17 @@ interface LogRow {
 
 const ACTION_STYLE: Record<string, { label: string; cls: string }> = {
   'admin.login': { label: 'LOGIN', cls: 'border-sky-400/40 bg-sky-400/10 text-sky-300' },
+  'admin.login_failed': { label: 'AUTH✗', cls: 'border-red-400/40 bg-red-400/10 text-red-300' },
+  'admin.lockout': { label: 'LOCK', cls: 'border-red-400/45 bg-red-400/15 text-red-300' },
+  'security.limits': { label: 'GUARD', cls: 'border-violet-400/40 bg-violet-400/10 text-violet-300' },
   'user.ban': { label: 'BAN', cls: 'border-red-400/40 bg-red-400/10 text-red-300' },
   'user.unban': { label: 'UNBAN', cls: 'border-emerald-400/40 bg-emerald-400/10 text-emerald-300' },
   'user.credit': { label: 'CREDIT', cls: 'border-emerald-400/40 bg-emerald-400/10 text-emerald-300' },
   'user.debit': { label: 'DEBIT', cls: 'border-amber-400/40 bg-amber-400/10 text-amber-300' },
+  'user.bulk_ban': { label: 'B-BAN', cls: 'border-red-400/40 bg-red-400/10 text-red-300' },
+  'user.bulk_unban': { label: 'B-UNBN', cls: 'border-emerald-400/40 bg-emerald-400/10 text-emerald-300' },
+  'user.bulk_credit': { label: 'B-CRDT', cls: 'border-emerald-400/40 bg-emerald-400/10 text-emerald-300' },
+  'user.bulk_debit': { label: 'B-DBIT', cls: 'border-amber-400/40 bg-amber-400/10 text-amber-300' },
   'order.create': { label: 'ORDER+', cls: 'border-emerald-400/40 bg-emerald-400/10 text-emerald-300' },
   'order.complete': { label: 'ORDER✓', cls: 'border-emerald-400/40 bg-emerald-400/10 text-emerald-300' },
   'order.expire': { label: 'EXPIRE', cls: 'border-amber-400/40 bg-amber-400/10 text-amber-300' },
@@ -292,6 +300,50 @@ export function AdminControl({ onMaintenanceChange }: { onMaintenanceChange: (v:
           </div>
         </section>
       </div>
+
+      {/* ============ PLATFORM MASTER SWITCHES ============ */}
+      <section className="wp-rise rounded-2xl border border-[var(--wp-border)] bg-[var(--wp-card)] p-4 backdrop-blur-xl" style={{ animationDelay: '110ms' }}>
+        <div className="flex items-center justify-between gap-2">
+          <h2 className="text-[13.5px] font-extrabold text-[var(--wp-heading)]">Platform Master Switches</h2>
+          <span className={`rounded-lg border px-2.5 py-1 text-[9.5px] font-black uppercase tracking-wide ${config.disabledPlatforms.length ? 'border-amber-400/40 bg-amber-400/10 text-amber-300' : 'border-emerald-400/30 bg-emerald-400/10 text-[var(--wp-accent-text)]'}`}>
+            {10 - config.disabledPlatforms.length}/10 live
+          </span>
+        </div>
+        <p className="mt-0.5 text-[10px] text-[var(--wp-muted-2)]">
+          Toggle any payout platform off — manual orders are rejected instantly; the live feed stops showing it.
+        </p>
+        <div className="mt-3 grid grid-cols-2 gap-2 sm:grid-cols-5">
+          {['1Win', 'Stake', 'Parimatch', '4Rabet', '1xBet', 'MelBet', 'Betway', 'Dafabet', 'BC.Game', 'Mostbet'].map((name) => {
+            const off = config.disabledPlatforms.includes(name)
+            return (
+              <button
+                key={name}
+                type="button"
+                role="switch"
+                aria-checked={!off}
+                disabled={saving}
+                onClick={() => {
+                  const next = off
+                    ? config.disabledPlatforms.filter((p) => p !== name)
+                    : [...config.disabledPlatforms, name]
+                  void patchSettings({ disabledPlatforms: next }, off ? `${name} enabled` : `${name} disabled`)
+                }}
+                className={`flex h-[52px] flex-col items-center justify-center gap-0.5 rounded-xl border px-2 transition-all duration-200 active:scale-95 disabled:opacity-60 ${
+                  off
+                    ? 'border-red-400/35 bg-red-400/[0.07] text-red-300'
+                    : 'border-emerald-400/35 bg-emerald-400/[0.08] text-[var(--wp-accent-text)] shadow-[0_0_16px_-8px_rgba(0,208,132,0.5)]'
+                }`}
+              >
+                <span className="text-[11px] font-black leading-tight">{name}</span>
+                <span className="flex items-center gap-1 text-[8px] font-bold uppercase tracking-wider opacity-80">
+                  <span className={`h-1.5 w-1.5 rounded-full ${off ? 'bg-red-400' : 'bg-[#00D084] wp-live-dot'}`} />
+                  {off ? 'OFF' : 'LIVE'}
+                </span>
+              </button>
+            )
+          })}
+        </div>
+      </section>
 
       {/* ============ AUDIT TRAIL ============ */}
       <section className="wp-rise rounded-2xl border border-[var(--wp-border)] bg-[var(--wp-card)] p-4 backdrop-blur-xl" style={{ animationDelay: '120ms' }}>

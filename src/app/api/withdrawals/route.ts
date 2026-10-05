@@ -1,6 +1,8 @@
 import { NextResponse } from 'next/server'
 import { db } from '@/lib/db'
 import { getUserIdFromRequest } from '@/lib/session'
+import { getAppConfig } from '@/lib/app-config'
+import { recordTx } from '@/lib/ledger'
 
 /**
  * GET  /api/withdrawals — the logged-in user's own payout history (latest 20).
@@ -52,9 +54,17 @@ export async function POST(req: Request) {
     const account = String(body?.account ?? '').trim()
     const ifsc = String(body?.ifsc ?? '').trim().toUpperCase()
 
-    if (!Number.isFinite(amount) || amount < 200) {
+    // live guard rails from Admin Security Centre (withdrawMin/Max + daily cap)
+    const cfg = await getAppConfig()
+    if (!Number.isFinite(amount) || amount < cfg.withdrawMin) {
       return NextResponse.json(
-        { ok: false, error: 'Minimum withdrawal is ₹200' },
+        { ok: false, error: `Minimum withdrawal is ₹${Math.round(cfg.withdrawMin)}` },
+        { status: 400 }
+      )
+    }
+    if (amount > cfg.withdrawMax) {
+      return NextResponse.json(
+        { ok: false, error: `Maximum withdrawal is ₹${Math.round(cfg.withdrawMax)} per request` },
         { status: 400 }
       )
     }
@@ -91,10 +101,33 @@ export async function POST(req: Request) {
       )
     }
 
+    // DAILY PAYOUT CAP — total paid out today (all users) must stay under the limit
+    const dayStart = new Date()
+    dayStart.setHours(0, 0, 0, 0)
+    const paidAgg = await db.withdrawal.aggregate({
+      where: { status: 'paid', updatedAt: { gte: dayStart } },
+      _sum: { amount: true },
+    })
+    const paidToday = Number(paidAgg._sum.amount ?? 0)
+    if (paidToday + amount > cfg.dailyPayoutLimit) {
+      const headroom = Math.max(0, Math.round(cfg.dailyPayoutLimit - paidToday))
+      return NextResponse.json(
+        {
+          ok: false,
+          error:
+            headroom > 0
+              ? `Daily payout limit reached — only ₹${headroom.toLocaleString('en-IN')} can be paid right now. Try again later.`
+              : 'Daily payout limit reached. Please try again tomorrow.',
+        },
+        { status: 429 }
+      )
+    }
+
     // atomic-ish hold: deduct now, refund on reject (admin side)
+    const balanceAfter = Number(user.walletBalance) - amount
     await db.user.update({
       where: { id: userId },
-      data: { walletBalance: Number(user.walletBalance) - amount },
+      data: { walletBalance: balanceAfter },
     })
     const w = await db.withdrawal.create({
       data: {
@@ -105,6 +138,13 @@ export async function POST(req: Request) {
           method === 'upi' ? upiId : `A/C ••${account.slice(-4)} · ${ifsc}`,
         status: 'pending',
       },
+    })
+    recordTx({
+      userId,
+      type: 'withdrawal_hold',
+      amount,
+      balanceAfter,
+      note: `${method.toUpperCase()} → ${w.destination}`,
     })
 
     return NextResponse.json({ ok: true, id: w.id, status: 'pending' })

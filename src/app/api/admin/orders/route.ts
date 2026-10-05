@@ -1,7 +1,8 @@
 import { NextResponse } from 'next/server'
 import { db } from '@/lib/db'
 import { getAdminFromRequest, adminUnauthorized } from '@/lib/admin-session'
-import { adminLog } from '@/lib/app-config'
+import { getAppConfig, adminLog } from '@/lib/app-config'
+import { recordTx } from '@/lib/ledger'
 import { PLATFORMS } from '@/lib/order-rules'
 
 /**
@@ -76,6 +77,14 @@ export async function POST(req: Request) {
         { status: 400 }
       )
     }
+    // platform master-switch — admin can turn any platform OFF
+    const cfg = await getAppConfig()
+    if (cfg.disabledPlatforms.includes(platform)) {
+      return NextResponse.json(
+        { ok: false, error: `${platform} is currently disabled in Master Control` },
+        { status: 400 }
+      )
+    }
 
     const user = await db.user.findUnique({ where: { username }, select: { id: true } })
     if (!user) {
@@ -112,7 +121,18 @@ export async function PATCH(req: Request) {
     const id = String(body?.id ?? '')
     const action = String(body?.action ?? '')
 
-    const order = await db.order.findUnique({ where: { id }, select: { id: true, status: true, amount: true, platform: true } })
+    const order = await db.order.findUnique({
+      where: { id },
+      select: {
+        id: true,
+        status: true,
+        amount: true,
+        bonus: true,
+        platform: true,
+        userId: true,
+        user: { select: { username: true, walletBalance: true, status: true } },
+      },
+    })
     if (!order) {
       return NextResponse.json({ ok: false, error: 'Order not found' }, { status: 404 })
     }
@@ -120,8 +140,32 @@ export async function PATCH(req: Request) {
     if (action === 'complete' || action === 'expire') {
       const status = action === 'complete' ? 'completed' : 'expired'
       await db.order.update({ where: { id }, data: { status } })
-      void adminLog(`order.${action}`, `₹${order.amount} on ${order.platform}`)
-      return NextResponse.json({ ok: true, status })
+
+      // ADVANCED: completing an order AUTO-CREDITS the bonus to the user's
+      // wallet (if the order bonus is > 0 and the account is still active).
+      let bonusPaid = 0
+      if (
+        action === 'complete' &&
+        Number(order.bonus) > 0 &&
+        order.user.status !== 'banned'
+      ) {
+        bonusPaid = Number(order.bonus)
+        const newBalance = Number(order.user.walletBalance) + bonusPaid
+        await db.user.update({
+          where: { id: order.userId },
+          data: { walletBalance: newBalance },
+        })
+        recordTx({
+          userId: order.userId,
+          type: 'order_bonus',
+          amount: bonusPaid,
+          balanceAfter: newBalance,
+          note: `${order.platform} order ₹${order.amount} completed`,
+        })
+      }
+
+      void adminLog(`order.${action}`, `₹${order.amount} on ${order.platform} (${order.user.username})`)
+      return NextResponse.json({ ok: true, status, bonusPaid })
     }
 
     if (action === 'delete') {

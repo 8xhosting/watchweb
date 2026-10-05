@@ -13,5 +13,8 @@ export async function GET() {
     maintenance: config.maintenance,
     announcement: config.announcement,
     bonusPercent: config.bonusPercent,
+    // live payout guard rails (Admin Security Centre controls these)
+    withdrawMin: config.withdrawMin,
+    withdrawMax: config.withdrawMax,
   })
 }

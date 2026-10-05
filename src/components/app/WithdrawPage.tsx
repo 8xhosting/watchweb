@@ -13,7 +13,6 @@ import {
 } from '@/components/home/icons'
 import { PageHeader } from './PageHeader'
 import { WITHDRAW_MIN } from './data'
-
 const inrWhole = (v: number) => v.toLocaleString('en-IN')
 
 const QUICK = [500, 1000, 2000, 5000]
@@ -59,6 +58,29 @@ export function WithdrawPage({
   const [ifsc, setIfsc] = useState('')
   const [submitting, setSubmitting] = useState(false)
   const [history, setHistory] = useState<WdRecord[] | null>(null)
+  /** live payout guard rails from Admin Security Centre (poll /api/app-config) */
+  const [wdMin, setWdMin] = useState<number>(WITHDRAW_MIN)
+
+  useEffect(() => {
+    let alive = true
+    const pull = async () => {
+      try {
+        const res = await fetch('/api/app-config', { cache: 'no-store' })
+        const data = await res.json().catch(() => null)
+        if (alive && res.ok && data?.ok && Number(data.withdrawMin) > 0) {
+          setWdMin(Math.round(Number(data.withdrawMin)))
+        }
+      } catch {
+        // keep current value
+      }
+    }
+    void pull()
+    const t = setInterval(pull, 15000)
+    return () => {
+      alive = false
+      clearInterval(t)
+    }
+  }, [])
 
   const loadHistory = useCallback(async () => {
     try {
@@ -78,17 +100,17 @@ export function WithdrawPage({
   const numAmount = Number(amount)
   const valid =
     Number.isFinite(numAmount) &&
-    numAmount >= WITHDRAW_MIN &&
+    numAmount >= wdMin &&
     numAmount <= balance &&
     (method === 'upi' ? /^[\w.\-]{2,}@[a-zA-Z]{2,}$/.test(upiId.trim()) : account.trim().length >= 9 && ifsc.trim().length >= 5)
 
   async function submit() {
     if (submitting) return
-    if (!Number.isFinite(numAmount) || numAmount < WITHDRAW_MIN) {
+    if (!Number.isFinite(numAmount) || numAmount < wdMin) {
       toast({
         variant: 'destructive',
         title: 'Amount too low',
-        description: `Minimum withdrawal is ₹${WITHDRAW_MIN}.`,
+        description: `Minimum withdrawal is ₹${wdMin}.`,
       })
       return
     }
@@ -182,7 +204,7 @@ export function WithdrawPage({
           <CountUp value={balance} prefix="₹ " decimals={2} />
         </p>
         <p className="mt-1.5 text-[10.5px] text-[var(--wp-muted)]">
-          Minimum withdrawal ₹{WITHDRAW_MIN} · No processing fee
+          Minimum withdrawal ₹{wdMin} · No processing fee
         </p>
       </section>
 
@@ -350,7 +372,7 @@ export function WithdrawPage({
         ) : (
           <>
             <IconArrowDownToLine className="h-[18px] w-[18px]" />
-            Withdraw{numAmount >= WITHDRAW_MIN ? ` ₹${inrWhole(numAmount)}` : ''}
+            Withdraw{numAmount >= wdMin ? ` ₹${inrWhole(numAmount)}` : ''}
           </>
         )}
       </button>

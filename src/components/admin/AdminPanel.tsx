@@ -7,8 +7,11 @@ import { AdminUsers } from './AdminUsers'
 import { AdminOrders } from './AdminOrders'
 import { AdminWithdrawals } from './AdminWithdrawals'
 import { AdminControl } from './AdminControl'
+import { AdminAnalytics } from './AdminAnalytics'
+import { AdminLedger } from './AdminLedger'
+import { AdminSecurity } from './AdminSecurity'
 
-type Section = 'dashboard' | 'users' | 'orders' | 'withdrawals' | 'control'
+type Section = 'dashboard' | 'analytics' | 'users' | 'orders' | 'withdrawals' | 'ledger' | 'security' | 'control'
 
 const NAV: Array<{ key: Section; label: string; sub: string; icon: string }> = [
   {
@@ -16,6 +19,12 @@ const NAV: Array<{ key: Section; label: string; sub: string; icon: string }> = [
     label: 'Dashboard',
     sub: 'Live KPIs & health',
     icon: 'M3 3v16a2 2 0 0 0 2 2h16 M7 14l4-4 4 3 5-6',
+  },
+  {
+    key: 'analytics',
+    label: 'Analytics',
+    sub: 'Growth · leaderboard · platforms',
+    icon: 'M3 3v18h18 M7 16v-5 m5 5V8 m5 8v-3',
   },
   {
     key: 'users',
@@ -34,6 +43,18 @@ const NAV: Array<{ key: Section; label: string; sub: string; icon: string }> = [
     label: 'Payouts',
     sub: 'Withdrawal queue',
     icon: 'M12 3v12 m-5-5 5 5 5-5 M5 21h14',
+  },
+  {
+    key: 'ledger',
+    label: 'Ledger',
+    sub: 'Every rupee movement',
+    icon: 'M4 19.5A2.5 2.5 0 0 1 6.5 17H20 M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z',
+  },
+  {
+    key: 'security',
+    label: 'Security',
+    sub: 'Guard rails · auth · risks',
+    icon: 'M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 0 1-.67-.01C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.24-2.72a1.17 1.17 0 0 1 1.52 0C14.51 3.81 17 5 19 5a1 1 0 0 1 1 1Z',
   },
   {
     key: 'control',
@@ -278,9 +299,12 @@ export function AdminPanel() {
         {/* sections */}
         <main className="mx-auto w-full max-w-[1180px] flex-1 px-4 py-5 lg:px-6">
           {section === 'dashboard' && <AdminDashboard onGoSection={(s) => setSection(s as Section)} />}
+          {section === 'analytics' && <AdminAnalytics />}
           {section === 'users' && <AdminUsers />}
           {section === 'orders' && <AdminOrders />}
           {section === 'withdrawals' && <AdminWithdrawals />}
+          {section === 'ledger' && <AdminLedger />}
+          {section === 'security' && <AdminSecurity />}
           {section === 'control' && <AdminControl onMaintenanceChange={setMaintenance} />}
         </main>
       </div>

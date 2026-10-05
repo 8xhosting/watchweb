@@ -13,6 +13,10 @@ export interface AppConfig {
   orderMax: number
   maintenance: boolean
   announcement: string
+  withdrawMin: number
+  withdrawMax: number
+  dailyPayoutLimit: number
+  disabledPlatforms: string[]
 }
 
 export const APP_CONFIG_DEFAULTS: AppConfig = {
@@ -21,6 +25,10 @@ export const APP_CONFIG_DEFAULTS: AppConfig = {
   orderMax: 9000,
   maintenance: false,
   announcement: '',
+  withdrawMin: 200,
+  withdrawMax: 50000,
+  dailyPayoutLimit: 100000,
+  disabledPlatforms: [],
 }
 
 /** Read the global config, merging DB values over the defaults. */
@@ -34,6 +42,13 @@ export async function getAppConfig(): Promise<AppConfig> {
       orderMax: Number(row.orderMax),
       maintenance: Boolean(row.maintenance),
       announcement: String(row.announcement ?? ''),
+      withdrawMin: Number(row.withdrawMin ?? APP_CONFIG_DEFAULTS.withdrawMin),
+      withdrawMax: Number(row.withdrawMax ?? APP_CONFIG_DEFAULTS.withdrawMax),
+      dailyPayoutLimit: Number(row.dailyPayoutLimit ?? APP_CONFIG_DEFAULTS.dailyPayoutLimit),
+      disabledPlatforms: String(row.disabledPlatforms ?? '')
+        .split(',')
+        .map((s) => s.trim())
+        .filter(Boolean),
     }
   } catch {
     return { ...APP_CONFIG_DEFAULTS }
@@ -49,12 +64,21 @@ export async function saveAppConfig(patch: Partial<AppConfig>): Promise<AppConfi
     orderMax: Math.max(1, patch.orderMax ?? current.orderMax),
     maintenance: patch.maintenance ?? current.maintenance,
     announcement: (patch.announcement ?? current.announcement).slice(0, 200),
+    withdrawMin: Math.max(1, patch.withdrawMin ?? current.withdrawMin),
+    withdrawMax: Math.max(1, patch.withdrawMax ?? current.withdrawMax),
+    dailyPayoutLimit: Math.max(1, patch.dailyPayoutLimit ?? current.dailyPayoutLimit),
+    disabledPlatforms:
+      patch.disabledPlatforms ?? current.disabledPlatforms,
   }
   if (next.orderMax < next.orderMin) next.orderMax = next.orderMin
+  if (next.withdrawMax < next.withdrawMin) next.withdrawMax = next.withdrawMin
   await db.appSetting.upsert({
     where: { id: 'global' },
-    update: { ...next },
-    create: { id: 'global', ...next },
+    update: {
+      ...next,
+      disabledPlatforms: next.disabledPlatforms.join(','),
+    },
+    create: { id: 'global', ...next, disabledPlatforms: next.disabledPlatforms.join(',') },
   })
   return next
 }

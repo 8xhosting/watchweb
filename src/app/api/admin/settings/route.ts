@@ -5,7 +5,8 @@ import { getAppConfig, saveAppConfig, adminLog } from '@/lib/app-config'
 /**
  * GET   /api/admin/settings — current global app configuration
  * PATCH /api/admin/settings — { bonusPercent?, orderMin?, orderMax?,
- *                               maintenance?, announcement? }
+ *                               maintenance?, announcement?,
+ *                               disabledPlatforms? (string[]) }
  */
 export async function GET(req: Request) {
   const admin = getAdminFromRequest(req)
@@ -26,6 +27,16 @@ export async function PATCH(req: Request) {
     if (body?.orderMax !== undefined) patch.orderMax = Number(body.orderMax)
     if (body?.maintenance !== undefined) patch.maintenance = Boolean(body.maintenance)
     if (body?.announcement !== undefined) patch.announcement = String(body.announcement)
+    if (Array.isArray(body?.disabledPlatforms)) {
+      // keep only real platform names — never let junk into the config
+      const ALL = [
+        '1Win', 'Stake', 'Parimatch', '4Rabet', '1xBet',
+        'MelBet', 'Betway', 'Dafabet', 'BC.Game', 'Mostbet',
+      ]
+      patch.disabledPlatforms = body.disabledPlatforms
+        .map((p: unknown) => String(p))
+        .filter((p: string) => ALL.includes(p))
+    }
 
     const config = await saveAppConfig(patch)
     void adminLog('settings.update', JSON.stringify(patch).slice(0, 200))

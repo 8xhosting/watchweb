@@ -34,6 +34,10 @@ export async function POST(req: Request) {
 
     const res = NextResponse.json({ ok: true, user: { username: user.username } })
     res.cookies.set(SESSION_COOKIE, createSessionToken(user.id), SESSION_COOKIE_OPTIONS)
+    // security centre: track last successful login (fire-and-forget)
+    void db.user
+      .update({ where: { id: user.id }, data: { lastLoginAt: new Date() } })
+      .catch(() => {})
     return res
   } catch {
     return NextResponse.json({ error: 'Something went wrong. Please try again.' }, { status: 500 })

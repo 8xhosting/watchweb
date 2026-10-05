@@ -10,17 +10,19 @@ datasource db {
 // WatchPay users — registration data saved after OTP verification.
 // MongoDB (Atlas): ids are ObjectIds mapped to String, collection = "User".
 model User {
-  id            String   @id @default(auto()) @map("_id") @db.ObjectId
-  username      String   @unique
-  mobile        String   @unique // 10-digit Indian mobile number
-  password      String   // scrypt hash in "salt:hash" format (never plain text)
-  walletBalance Float    @default(0) // real balance shown in home header wallet (starts at 0)
-  status        String   @default("active") // "active" | "banned" (admin master control)
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
+  id            String    @id @default(auto()) @map("_id") @db.ObjectId
+  username      String    @unique
+  mobile        String    @unique // 10-digit Indian mobile number
+  password      String    // scrypt hash in "salt:hash" format (never plain text)
+  walletBalance Float     @default(0) // real balance shown in home header wallet (starts at 0)
+  status        String    @default("active") // "active" | "banned" (admin master control)
+  lastLoginAt   DateTime? // security centre — last successful user login
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
 
-  orders      Order[]
-  withdrawals Withdrawal[]
+  orders       Order[]
+  withdrawals  Withdrawal[]
+  transactions Transaction[]
 }
 
 // Payment orders — persisted when the user taps PAY on a live order.
@@ -62,14 +64,37 @@ model Withdrawal {
 // Global app configuration — ONE document (key = "global"), edited live
 // from the Admin Master Control panel (bonus %, maintenance, announcement…).
 model AppSetting {
-  id           String   @id @default("global") @map("_id")
-  bonusPercent Float    @default(12.5)
-  orderMin     Float    @default(700)
-  orderMax     Float    @default(9000)
-  maintenance  Boolean  @default(false)
-  announcement String   @default("")
+  id                String   @id @default("global") @map("_id")
+  bonusPercent      Float    @default(12.5)
+  orderMin          Float    @default(700)
+  orderMax          Float    @default(9000)
+  maintenance       Boolean  @default(false)
+  announcement      String   @default("")
+  // security centre — payout guard rails (enforced by /api/withdrawals)
+  withdrawMin       Float    @default(200)
+  withdrawMax       Float    @default(50000)
+  dailyPayoutLimit  Float    @default(100000)
+  // master control — comma-separated platform names turned OFF by admin
+  disabledPlatforms String   @default("")
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+}
+
+// Money ledger — EVERY rupee movement (admin credit/debit, withdrawal
+// hold/paid/refund, order bonus) is recorded here. Admin "Ledger" tab.
+model Transaction {
+  id           String   @id @default(auto()) @map("_id") @db.ObjectId
+  userId       String?  @db.ObjectId
+  user         User?    @relation(fields: [userId], references: [id])
+  type         String // credit | debit | order_bonus | withdrawal_hold | withdrawal_paid | withdrawal_refund
+  amount       Float
+  balanceAfter Float    @default(0) // wallet balance right after this movement
+  note         String   @default("")
   createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
+
+  @@index([createdAt])
+  @@index([type])
+  @@index([userId])
 }
 
 // Admin audit trail — every master-control action lands here.

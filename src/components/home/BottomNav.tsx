@@ -30,7 +30,7 @@ export function BottomNav({
   return (
     <nav
       aria-label="Primary"
-      className="fixed bottom-0 left-1/2 z-30 w-full max-w-[430px] -translate-x-1/2 border-t border-[var(--wp-border)] bg-[var(--wp-nav-bg)] px-2 backdrop-blur-2xl"
+      className="fixed bottom-0 left-1/2 z-30 w-full max-w-[430px] -translate-x-1/2 border-t border-[var(--wp-border)] bg-[var(--wp-nav-bg)] backdrop-blur-2xl"
       style={{ paddingBottom: 'max(9px, env(safe-area-inset-bottom))' }}
     >
       <div className="flex items-stretch">

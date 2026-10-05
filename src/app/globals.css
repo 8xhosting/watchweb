@@ -519,3 +519,29 @@ input {
 .wp-light .wp-badge {
   filter: brightness(0.68) saturate(1.5);
 }
+
+/* ================= NEON-GLASS TOAST — lifetime progress bar ================= */
+
+@keyframes wp-toast-progress {
+  from {
+    transform: scaleX(1);
+  }
+  to {
+    transform: scaleX(0);
+  }
+}
+.wp-toast-progress {
+  transform-origin: left center;
+  animation: wp-toast-progress 5s linear forwards;
+}
+/* pause the countdown while the toast is hovered (matches Radix's duration pause) */
+.group:hover .wp-toast-progress {
+  animation-play-state: paused;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .wp-toast-progress {
+    animation: none;
+    transform: scaleX(1);
+  }
+}

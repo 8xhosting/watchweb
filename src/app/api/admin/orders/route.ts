@@ -139,13 +139,18 @@ export async function PATCH(req: Request) {
 
     if (action === 'complete' || action === 'expire') {
       const status = action === 'complete' ? 'completed' : 'expired'
+
+      // Guard: if the gateway callback already settled this order (auto-
+      // completed + bonus credited), re-completing must NOT pay the bonus twice.
+      const wasProcessing = order.status === 'processing'
       await db.order.update({ where: { id }, data: { status } })
 
       // ADVANCED: completing an order AUTO-CREDITS the bonus to the user's
-      // wallet (if the order bonus is > 0 and the account is still active).
+      // wallet (only on a genuine processing → completed transition).
       let bonusPaid = 0
       if (
         action === 'complete' &&
+        wasProcessing &&
         Number(order.bonus) > 0 &&
         order.user.status !== 'banned'
       ) {

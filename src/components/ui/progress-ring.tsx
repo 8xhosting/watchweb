@@ -3,6 +3,13 @@
 /**
  * Animated SVG progress ring — emerald sweep driven by CSS (--ring-c trick).
  * Used on Profile (account strength) and Tasks (daily progress).
+ *
+ * Draw technique: dasharray = C C (one full dash, one full gap) and
+ * dashoffset = C − arc. Visible arc length = C − offset, so the CSS keyframe
+ * (dashoffset: var(--ring-c) → computed value) sweeps from EMPTY to the
+ * exact percentage and RESTS at the right arc length. (The old version set
+ * dasharray to the arc itself and animated offset by a full period C —
+ * the rendered arc never changed, so the ring looked stuck/full.)
  */
 export function ProgressRing({
   percent,
@@ -20,7 +27,7 @@ export function ProgressRing({
   const clamped = Math.max(0, Math.min(100, Math.round(percent)))
   const r = (size - stroke) / 2
   const c = 2 * Math.PI * r
-  const dash = (clamped / 100) * c
+  const arc = (clamped / 100) * c
 
   return (
     <div className="relative shrink-0" style={{ width: size, height: size }}>
@@ -47,7 +54,8 @@ export function ProgressRing({
           stroke="url(#wp-ring-grad)"
           strokeWidth={stroke}
           strokeLinecap="round"
-          strokeDasharray={`${dash} ${c - dash}`}
+          strokeDasharray={`${c} ${c}`}
+          strokeDashoffset={c - arc}
           transform={`rotate(-90 ${size / 2} ${size / 2})`}
           className="wp-ring-anim"
           style={{ ['--ring-c' as string]: `${c}`, filter: 'drop-shadow(0 0 6px rgba(0,208,132,0.55))' }}

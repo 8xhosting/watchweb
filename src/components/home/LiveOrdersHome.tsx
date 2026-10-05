@@ -70,6 +70,7 @@ export function LiveOrdersHome({
   light,
   onToggleLight,
   onLogout,
+  onNavigate,
   announcement = '',
 }: {
   username: string
@@ -78,6 +79,8 @@ export function LiveOrdersHome({
   light: boolean
   onToggleLight: () => void
   onLogout: () => void
+  /** header navigation — every page connects from the top bar */
+  onNavigate: (view: 'profile' | 'orders' | 'team' | 'task' | 'deposit' | 'withdraw') => void
   /** live broadcast from the Admin Master Control panel (may be empty) */
   announcement?: string
 }) {
@@ -248,60 +251,85 @@ export function LiveOrdersHome({
 
   /* ----------------- centralised 1s tick for ALL orders ----------------- */
 
-  useEffect(() => {
-    const interval = setInterval(() => {
-      if (!aliveRef.current) return
-      const current = ordersRef.current
-      let anyChange = false
+  /**
+   * ONE countdown pass over the whole list. Runs on the shared interval AND
+   * immediately when the tab becomes visible again — mobile browsers throttle
+   * background timers to ~1/minute (or pause them entirely), so without this
+   * the orders look FROZEN when the user comes back until a manual refresh.
+   */
+  const tick = useCallback(() => {
+    if (!aliveRef.current) return
+    const current = ordersRef.current
+    let anyChange = false
 
-      const next = current.map((o) => {
-        if (o.status !== 'active' || heldRef.current.has(o.id)) return o
-        anyChange = true
-        const remaining = o.remaining - 1
-        if (remaining <= 0) return { ...o, remaining: 0, status: 'soldout' as const }
-        return { ...o, remaining }
-      })
-      if (!anyChange) return
+    const next = current.map((o) => {
+      if (o.status !== 'active' || heldRef.current.has(o.id)) return o
+      anyChange = true
+      const remaining = o.remaining - 1
+      if (remaining <= 0) return { ...o, remaining: 0, status: 'soldout' as const }
+      return { ...o, remaining }
+    })
+    if (!anyChange) return
 
-      ordersRef.current = next
-      setOrders(next)
+    ordersRef.current = next
+    setOrders(next)
 
-      // kick off the expiry pipeline for orders that JUST hit zero —
-      // exactly once per order id, guarded by expiredRef.
-      // The replacement fetch starts NOW so it overlaps the animation.
-      for (const o of next) {
-        if (o.status === 'soldout' && !expiredRef.current.has(o.id)) {
-          expiredRef.current.add(o.id)
-          // alternate the swipe-away direction per expiry
-          const exitDir = exitFlipRef.current
-          exitFlipRef.current = exitDir === 1 ? -1 : 1
-          void requestReplacement(o.id)
-          later(() => {
-            setOrders((prev) =>
-              prev.map((x) =>
-                x.id === o.id && x.status === 'soldout'
-                  ? { ...x, status: 'exit' as const, exitDir }
-                  : x
-              )
+    // kick off the expiry pipeline for orders that JUST hit zero —
+    // exactly once per order id, guarded by expiredRef.
+    // The replacement fetch starts NOW so it overlaps the animation.
+    for (const o of next) {
+      if (o.status === 'soldout' && !expiredRef.current.has(o.id)) {
+        expiredRef.current.add(o.id)
+        // alternate the swipe-away direction per expiry
+        const exitDir = exitFlipRef.current
+        exitFlipRef.current = exitDir === 1 ? -1 : 1
+        void requestReplacement(o.id)
+        later(() => {
+          setOrders((prev) =>
+            prev.map((x) =>
+              x.id === o.id && x.status === 'soldout'
+                ? { ...x, status: 'exit' as const, exitDir }
+                : x
             )
-          }, SOLDOUT_MS)
-          later(() => {
-            const pending = pendingRef.current.get(o.id)
-            pendingRef.current.delete(o.id)
-            if (pending) {
-              // swap the fresh card into the SAME slot — the list itself
-              // never moves up/down, only this card swipes out and the new
-              // one swipes in (horizontal motion only)
-              insertFresh(pending, o.id)
-            } else {
-              setOrders((prev) => prev.filter((x) => x.id !== o.id))
-            }
-          }, SOLDOUT_MS + EXIT_MS)
-        }
+          )
+        }, SOLDOUT_MS)
+        later(() => {
+          const pending = pendingRef.current.get(o.id)
+          pendingRef.current.delete(o.id)
+          if (pending) {
+            // swap the fresh card into the SAME slot — the list itself
+            // never moves up/down, only this card swipes out and the new
+            // one swipes in (horizontal motion only)
+            insertFresh(pending, o.id)
+          } else {
+            setOrders((prev) => prev.filter((x) => x.id !== o.id))
+          }
+        }, SOLDOUT_MS + EXIT_MS)
       }
-    }, 1000)
-    return () => clearInterval(interval)
+    }
   }, [later, requestReplacement, insertFresh])
+
+  useEffect(() => {
+    const interval = setInterval(tick, 1000)
+    return () => clearInterval(interval)
+  }, [tick])
+
+  /* ---- background recovery: mobile browsers throttle/pause timers while
+     the screen is off or the tab is hidden. The moment the user returns we
+     run ONE catch-up pass — expired orders flush out, fresh ones swipe in,
+     active countdowns resume — no manual refresh needed. pageshow covers
+     bfcache restores (back-navigation into a frozen page). ---- */
+  useEffect(() => {
+    const resume = () => {
+      if (document.visibilityState === 'visible') tick()
+    }
+    document.addEventListener('visibilitychange', resume)
+    window.addEventListener('pageshow', resume)
+    return () => {
+      document.removeEventListener('visibilitychange', resume)
+      window.removeEventListener('pageshow', resume)
+    }
+  }, [tick])
 
   /* ----------------------------- pay order ------------------------------ */
 
@@ -365,6 +393,7 @@ export function LiveOrdersHome({
         username={username}
         onToggleLight={onToggleLight}
         onLogout={onLogout}
+        onNavigate={onNavigate}
       />
       {announcement.trim() ? (
         <section

@@ -226,6 +226,14 @@ export const IconCheckCircle = ({ className }: { className?: string }) => (
   </Icon>
 )
 
+export const IconXCircle = ({ className }: { className?: string }) => (
+  <Icon className={className}>
+    <circle cx="12" cy="12" r="10" />
+    <path d="m15 9-6 6" />
+    <path d="m9 9 6 6" />
+  </Icon>
+)
+
 export const IconLogout = ({ className }: { className?: string }) => (
   <Icon className={className}>
     <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />

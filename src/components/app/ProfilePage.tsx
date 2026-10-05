@@ -1,5 +1,6 @@
 'use client'
 
+import { useCallback, useEffect, useState } from 'react'
 import { useToast } from '@/hooks/use-toast'
 import { CountUp } from '@/components/ui/count-up'
 import { ProgressRing } from '@/components/ui/progress-ring'
@@ -22,10 +23,16 @@ import { buildTeam } from './data'
 
 const inr = (v: number) => v.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
 
+/** VIP ladder — every 8 completed orders unlocks the next level (max 5). */
+const VIP_STEP = 8
+const vipFromOrders = (completed: number) =>
+  Math.max(1, Math.min(5, 1 + Math.floor(completed / VIP_STEP)))
+
 /**
- * Profile — ADVANCED: identity card with account-strength ring, wallet card
- * with animated balance, VIP progress, quick stats and the full settings
- * menu. Balance is the REAL DB value polled by AppShell.
+ * Profile — ADVANCED: identity card with a REAL account-strength ring
+ * (computed from actual account activity), wallet card with animated
+ * balance, VIP progress driven by real completed orders, quick stats and
+ * the full settings menu. Balance is the REAL DB value polled by AppShell.
  */
 export function ProfilePage({
   username,
@@ -50,13 +57,55 @@ export function ProfilePage({
 }) {
   const { toast } = useToast()
   const teamSize = buildTeam(username).length
+  const [completedOrders, setCompletedOrders] = useState(0)
+  const [totalOrders, setTotalOrders] = useState(0)
+  const [depositsOk, setDepositsOk] = useState(0)
+  const [bonusEarned, setBonusEarned] = useState(0)
+
+  /* real activity stats — same source as the Orders page */
+  const loadStats = useCallback(async () => {
+    try {
+      const res = await fetch('/api/orders/mine', { cache: 'no-store' })
+      const data = await res.json().catch(() => null)
+      if (!res.ok || !data?.ok) return
+      const orders = Array.isArray(data.orders) ? data.orders : []
+      const money = Array.isArray(data.addMoney) ? data.addMoney : []
+      setTotalOrders(orders.length)
+      setCompletedOrders(orders.filter((o: { status: string }) => o.status === 'completed').length)
+      setBonusEarned(
+        orders
+          .filter((o: { status: string }) => o.status === 'completed')
+          .reduce((s: number, o: { bonus: number }) => s + (Number(o.bonus) || 0), 0)
+      )
+      setDepositsOk(money.filter((d: { status: string }) => d.status === 'success').length)
+    } catch {
+      // stats are cosmetic — next visit retries
+    }
+  }, [])
+
+  useEffect(() => {
+    void loadStats()
+  }, [loadStats])
 
   const maskedMobile = mobile
     ? `+91 ••••• ${(mobile.slice(-5)).replace(/\d(?=\d{2})/g, '•')}`
     : '+91 ••••• •••'
 
-  /* account strength — how complete/engaged the account is (UI metric) */
-  const strength = Math.min(100, 40 + teamSize * 5 + (mobile ? 15 : 0) + (memberSince ? 10 : 0))
+  /* account strength — REAL engagement metric (never pegged at 100%):
+     30 base (account created) + 15 mobile + 10 tenure + 25 orders + 20 add-money */
+  const strength = Math.min(
+    100,
+    30 +
+      (mobile ? 15 : 0) +
+      (memberSince ? 10 : 0) +
+      Math.min(25, completedOrders * 5) +
+      Math.min(20, depositsOk * 4)
+  )
+
+  const vipLevel = vipFromOrders(completedOrders)
+  const vipBase = (vipLevel - 1) * VIP_STEP
+  const vipTarget = vipLevel * VIP_STEP
+  const vipPct = Math.min(100, ((completedOrders - vipBase) / VIP_STEP) * 100)
 
   const menu = [
     {
@@ -164,12 +213,12 @@ export function ProfilePage({
         </div>
       </section>
 
-      {/* quick stats */}
+      {/* quick stats — REAL numbers */}
       <section className="wp-rise grid grid-cols-3 gap-2" style={{ animationDelay: '100ms' }}>
         {[
-          { label: 'Tasks Done', value: 24 },
-          { label: 'Team Size', value: teamSize },
-          { label: 'VIP Level', value: 1 },
+          { label: 'Tasks Done', value: completedOrders },
+          { label: 'Total Orders', value: totalOrders },
+          { label: 'Bonus ₹', value: bonusEarned },
         ].map((s) => (
           <div
             key={s.label}
@@ -185,25 +234,26 @@ export function ProfilePage({
         ))}
       </section>
 
-      {/* VIP progress */}
+      {/* VIP progress — driven by REAL completed orders */}
       <section className="wp-rise rounded-2xl border border-[var(--wp-border)] bg-[var(--wp-card)] p-3.5 shadow-[var(--wp-shadow-card)] backdrop-blur-xl" style={{ animationDelay: '130ms' }}>
         <div className="flex items-center justify-between gap-2">
           <div className="flex items-center gap-2">
             <IconCrown className="h-4 w-4 text-amber-500 dark:text-amber-400" />
-            <h2 className="text-[13.5px] font-extrabold text-[var(--wp-heading)]">VIP Level 1</h2>
+            <h2 className="text-[13.5px] font-extrabold text-[var(--wp-heading)]">VIP Level {vipLevel}</h2>
           </div>
           <span className="text-[10px] font-bold text-[var(--wp-muted-2)]">
-            24/40 tasks to <span className="text-amber-500 dark:text-amber-300">VIP 2</span>
+            {Math.max(0, vipTarget - completedOrders)} more orders to{' '}
+            <span className="text-amber-500 dark:text-amber-300">VIP {Math.min(5, vipLevel + 1)}</span>
           </span>
         </div>
         <div className="mt-2.5 h-2 overflow-hidden rounded-full bg-white/[0.06]">
           <div
             className="h-full rounded-full bg-gradient-to-r from-amber-300 via-amber-400 to-amber-500 shadow-[0_0_10px_rgba(250,204,21,0.5)] transition-all duration-700"
-            style={{ width: '60%' }}
+            style={{ width: `${vipPct}%` }}
           />
         </div>
         <p className="mt-2 text-[10px] leading-relaxed text-[var(--wp-muted)]">
-          VIP 2 unlocks a 2% withdrawal bonus and priority support queues.
+          Higher VIP levels unlock bigger withdrawal bonuses and priority support queues.
         </p>
       </section>
 

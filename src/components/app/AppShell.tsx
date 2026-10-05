@@ -45,7 +45,9 @@ export function AppShell({
   const [memberSince, setMemberSince] = useState<string | null>(null)
   const [config, setConfig] = useState<LiveConfig>({ maintenance: false, announcement: '' })
 
-  /* wallet every ~5s — shared by Home header, Profile and Withdraw */
+  /* wallet every ~5s — shared by Home header, Profile and Withdraw.
+     Background tabs throttle timers, so on return to the app we poll once
+     immediately (the fresh balance lands without waiting 5s). */
   useEffect(() => {
     let cancelled = false
     const load = async () => {
@@ -60,9 +62,16 @@ export function AppShell({
     }
     void load()
     const t = setInterval(load, 5000)
+    const resume = () => {
+      if (document.visibilityState === 'visible') void load()
+    }
+    document.addEventListener('visibilitychange', resume)
+    window.addEventListener('pageshow', resume)
     return () => {
       cancelled = true
       clearInterval(t)
+      document.removeEventListener('visibilitychange', resume)
+      window.removeEventListener('pageshow', resume)
     }
   }, [])
 
@@ -142,6 +151,7 @@ export function AppShell({
           light={light}
           onToggleLight={onToggleLight}
           onLogout={onLogout}
+          onNavigate={(v) => onNavigate(v)}
           announcement={config.announcement}
         />
       )}
@@ -158,6 +168,7 @@ export function AppShell({
             username={username}
             onToggleLight={onToggleLight}
             onLogout={onLogout}
+            onNavigate={(v) => onNavigate(v)}
           />
 
           {view === 'team' && <TeamPage username={username} onBack={goHome} />}

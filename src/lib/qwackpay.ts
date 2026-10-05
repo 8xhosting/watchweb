@@ -181,8 +181,12 @@ export type SettleResult = 'credited' | 'already' | 'failed' | 'not_found'
 /**
  * Idempotently settle a deposit as SUCCESS:
  *   1. guarded updateMany (pending → success) — wins only once
- *   2. atomic wallet increment
+ *   2. atomic wallet increment (principal ₹amount)
  *   3. ledger entry (fire-and-forget)
+ *   4. LIVE-ORDER BONUS — when the deposit belongs to a live-order payment
+ *      (Order.merchantOrderId link), the order is auto-completed and its
+ *      bonus is credited to the same wallet (guarded processing → completed,
+ *      so exactly once — no double credit even if the admin also completes it)
  * Returns 'already' when someone else (callback/query race) settled first.
  */
 export async function settleDepositSuccess(opts: {
@@ -216,6 +220,33 @@ export async function settleDepositSuccess(opts: {
     balanceAfter: user.walletBalance,
     note: `${dep.merchantOrderId} · gateway deposit`,
   })
+
+  // Live-order payment → auto-complete the order and credit its bonus.
+  const linked = await db.order.findFirst({
+    where: { merchantOrderId: dep.merchantOrderId },
+    select: { id: true, bonus: true },
+  })
+  if (linked && Number(linked.bonus) > 0) {
+    const wonOrder = await db.order.updateMany({
+      where: { id: linked.id, status: 'processing' },
+      data: { status: 'completed' },
+    })
+    if (wonOrder.count > 0) {
+      const afterBonus = await db.user.update({
+        where: { id: dep.userId },
+        data: { walletBalance: { increment: Number(linked.bonus) } },
+        select: { walletBalance: true },
+      })
+      recordTx({
+        userId: dep.userId,
+        type: 'order_bonus',
+        amount: Number(linked.bonus),
+        balanceAfter: afterBonus.walletBalance,
+        note: `${dep.merchantOrderId} · live-order bonus`,
+      })
+    }
+  }
+
   return 'credited'
 }
 

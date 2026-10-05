@@ -1,0 +1,22 @@
+# ============================================================
+# WatchPay — Netlify configuration
+# GitHub-connected deploys: har push to `main` = automatic build + publish
+#
+# Required environment variable (set in Netlify UI):
+#   Site configuration -> Environment variables -> DATABASE_URL
+#   (MongoDB Atlas connection string)
+# ============================================================
+
+[build]
+  # Prisma client must be generated before next build (MongoDB connector)
+  command = "npx prisma generate && npx next build"
+  publish = ".next"
+
+[build.environment]
+  # Next.js 16 requires Node >= 20.9
+  NODE_VERSION = "22"
+
+# Netlify's official Next.js runtime — handles App Router, SSR,
+# API routes and static assets automatically
+[[plugins]]
+  package = "@netlify/plugin-nextjs"

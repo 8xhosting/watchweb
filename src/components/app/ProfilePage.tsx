@@ -3,7 +3,6 @@
 import { useCallback, useEffect, useState } from 'react'
 import { useToast } from '@/hooks/use-toast'
 import { CountUp } from '@/components/ui/count-up'
-import { ProgressRing } from '@/components/ui/progress-ring'
 import {
   IconArrowDownToLine,
   IconArrowUpDown,
@@ -29,10 +28,9 @@ const vipFromOrders = (completed: number) =>
   Math.max(1, Math.min(5, 1 + Math.floor(completed / VIP_STEP)))
 
 /**
- * Profile — ADVANCED: identity card with a REAL account-strength ring
- * (computed from actual account activity), wallet card with animated
- * balance, VIP progress driven by real completed orders, quick stats and
- * the full settings menu. Balance is the REAL DB value polled by AppShell.
+ * Profile — identity card, wallet card with animated balance, VIP
+ * progress driven by real completed orders, quick stats and the full
+ * settings menu. Balance is the REAL DB value polled by AppShell.
  */
 export function ProfilePage({
   username,
@@ -56,10 +54,8 @@ export function ProfilePage({
   onLogout: () => void
 }) {
   const { toast } = useToast()
-  const teamSize = buildTeam(username).length
   const [completedOrders, setCompletedOrders] = useState(0)
   const [totalOrders, setTotalOrders] = useState(0)
-  const [depositsOk, setDepositsOk] = useState(0)
   const [bonusEarned, setBonusEarned] = useState(0)
 
   /* real activity stats — same source as the Orders page */
@@ -69,7 +65,6 @@ export function ProfilePage({
       const data = await res.json().catch(() => null)
       if (!res.ok || !data?.ok) return
       const orders = Array.isArray(data.orders) ? data.orders : []
-      const money = Array.isArray(data.addMoney) ? data.addMoney : []
       setTotalOrders(orders.length)
       setCompletedOrders(orders.filter((o: { status: string }) => o.status === 'completed').length)
       setBonusEarned(
@@ -77,7 +72,6 @@ export function ProfilePage({
           .filter((o: { status: string }) => o.status === 'completed')
           .reduce((s: number, o: { bonus: number }) => s + (Number(o.bonus) || 0), 0)
       )
-      setDepositsOk(money.filter((d: { status: string }) => d.status === 'success').length)
     } catch {
       // stats are cosmetic — next visit retries
     }
@@ -90,17 +84,6 @@ export function ProfilePage({
   const maskedMobile = mobile
     ? `+91 ••••• ${(mobile.slice(-5)).replace(/\d(?=\d{2})/g, '•')}`
     : '+91 ••••• •••'
-
-  /* account strength — REAL engagement metric (never pegged at 100%):
-     30 base (account created) + 15 mobile + 10 tenure + 25 orders + 20 add-money */
-  const strength = Math.min(
-    100,
-    30 +
-      (mobile ? 15 : 0) +
-      (memberSince ? 10 : 0) +
-      Math.min(25, completedOrders * 5) +
-      Math.min(20, depositsOk * 4)
-  )
 
   const vipLevel = vipFromOrders(completedOrders)
   const vipBase = (vipLevel - 1) * VIP_STEP
@@ -149,7 +132,7 @@ export function ProfilePage({
     <div className="flex flex-col gap-3">
       <PageHeader title="Profile" subtitle="Account & settings" onBack={onBack} />
 
-      {/* identity card + strength ring */}
+      {/* identity card */}
       <section className="wp-rise relative overflow-hidden rounded-2xl border border-[var(--wp-border)] bg-[var(--wp-card)] p-4 shadow-[var(--wp-shadow-card)] backdrop-blur-xl">
         <span
           aria-hidden="true"
@@ -174,7 +157,6 @@ export function ProfilePage({
               {memberSince ? `Member since ${memberSince}` : 'WatchPay member'}
             </p>
           </div>
-          <ProgressRing percent={strength} size={72} stroke={7} sub="strength" />
         </div>
       </section>
 

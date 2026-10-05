@@ -28,20 +28,23 @@ model User {
 
 // Payment orders — persisted when the user taps PAY on a live order.
 // Live-feed orders are ephemeral (generated); these are REAL payment intents.
+// merchantOrderId links the Order to its gateway Deposit (same ₹ amount).
 model Order {
-  id        String   @id @default(auto()) @map("_id") @db.ObjectId
-  userId    String   @db.ObjectId
-  user      User     @relation(fields: [userId], references: [id])
-  amount    Float
-  bonus     Float    @default(0)
-  platform  String // branch_name — 1Win / Stake / …
-  status    String   @default("processing") // processing | completed | expired
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  id              String   @id @default(auto()) @map("_id") @db.ObjectId
+  userId          String   @db.ObjectId
+  user            User     @relation(fields: [userId], references: [id])
+  amount          Float
+  bonus           Float    @default(0)
+  platform        String // branch_name — 1Win / Stake / …
+  merchantOrderId String   @default("") // Deposit.merchantOrderId — set once the gateway link is created
+  status          String   @default("processing") // processing | completed | expired
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
 
   @@index([userId])
   @@index([status])
   @@index([createdAt])
+  @@index([merchantOrderId])
 }
 
 // Withdrawal requests — created by the user, processed by the admin.

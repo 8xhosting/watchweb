@@ -61,6 +61,18 @@ export function newMerchantOrderId(prefix = 'WP'): string {
   return `${prefix}${t}${r}`
 }
 
+/**
+ * Public origin of THIS deployment — used for the gateway return_url and the
+ * signed async notify_url. Env override first, request headers as fallback.
+ */
+export function siteOrigin(req: Request): string {
+  const envUrl = process.env.NEXT_PUBLIC_SITE_URL ?? process.env.SITE_URL
+  if (envUrl) return envUrl.replace(/\/+$/, '')
+  const proto = req.headers.get('x-forwarded-proto') ?? 'https'
+  const host = req.headers.get('x-forwarded-host') ?? req.headers.get('host') ?? 'localhost:3000'
+  return `${proto}://${host}`
+}
+
 /* --------------------------- gateway routing --------------------------- */
 
 /** Weighted random pick among ACTIVE gateways (weight 1..10). */

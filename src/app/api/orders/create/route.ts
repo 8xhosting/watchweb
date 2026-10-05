@@ -2,6 +2,12 @@ import { NextResponse } from 'next/server'
 import { db } from '@/lib/db'
 import { getUserIdFromRequest } from '@/lib/session'
 import { AMOUNT_MAX, AMOUNT_MIN, calcBonus } from '@/lib/order-rules'
+import {
+  createCollectionOrder,
+  newMerchantOrderId,
+  pickGateway,
+  siteOrigin,
+} from '@/lib/qwackpay'
 
 /**
  * POST /api/orders/create
@@ -9,12 +15,16 @@ import { AMOUNT_MAX, AMOUNT_MIN, calcBonus } from '@/lib/order-rules'
  *   request : { amount, order_type: 'task', ajax: 1, branch_name }
  *   response: { success, payment_url }  (on success the client redirects)
  *
- * PAYMENT GATEWAY HOOK:
- *   Set PAYMENT_API_URL in the environment to the real gateway endpoint and
- *   this route forwards the same payload server-side (secrets stay on the
- *   server) and relays its response, including the real payment_url.
- *   Until it is configured this route NEVER fabricates a payment_url — it
- *   returns success:false and the UI restores the button / keeps the order.
+ * FLOW (same money-rail as the Add-Money page):
+ *   1. persist the Order (admin panel visibility, bonus auto-credit on completion)
+ *   2. pick an ACTIVE gateway by weight for this EXACT amount
+ *   3. create a pending Deposit (settlement vehicle — the signed callback
+ *      /api/deposit/notify credits the wallet the moment the bank confirms)
+ *   4. create the QwackPay collection order for the SAME ₹ amount and
+ *      return its hosted payment_url
+ *
+ * The payment link is ALWAYS for the same amount as the tapped live order —
+ * the UI sends order.amount and this route never alters it.
  */
 export async function POST(req: Request) {
   try {
@@ -50,27 +60,26 @@ export async function POST(req: Request) {
       )
     }
 
-    const user = await db.user.findUnique({ where: { id: userId }, select: { id: true } })
+    const user = await db.user.findUnique({
+      where: { id: userId },
+      select: { id: true, username: true, mobile: true, status: true },
+    })
     if (!user) {
       return NextResponse.json(
         { success: false, message: 'Account not found. Please log in again.' },
         { status: 401 }
       )
     }
-
-    // Persist the payment intent so the Admin Master Control panel sees the
-    // REAL order flow (users with banned accounts cannot create orders).
-    const account = await db.user.findUnique({
-      where: { id: userId },
-      select: { status: true },
-    })
-    if (account?.status === 'banned') {
+    if (user.status === 'banned') {
       return NextResponse.json(
         { success: false, message: 'Your account has been suspended. Contact support.' },
         { status: 403 }
       )
     }
-    await db.order.create({
+
+    // Persist the payment intent so the Admin Master Control panel sees the
+    // REAL order flow. merchantOrderId is linked after the gateway pick.
+    const order = await db.order.create({
       data: {
         userId,
         amount,
@@ -80,36 +89,68 @@ export async function POST(req: Request) {
       },
     })
 
-    const gatewayUrl = process.env.PAYMENT_API_URL
-    if (gatewayUrl) {
-      // Forward the exact legacy payload to the real gateway, server-side.
-      try {
-        const upstream = await fetch(gatewayUrl, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ amount, order_type: orderType, ajax: 1, branch_name: branchName }),
-          signal: AbortSignal.timeout(10_000),
-        })
-        const data = await upstream.json().catch(() => null)
-        if (data && typeof data === 'object') {
-          return NextResponse.json(data, { status: upstream.status })
-        }
-        return NextResponse.json({
-          success: false,
-          message: 'Payment gateway returned an unreadable response. Please try again.',
-        })
-      } catch {
-        return NextResponse.json({
-          success: false,
-          message: 'Payment gateway is unreachable right now. Please try again.',
-        })
-      }
+    // Gateway routing — an active gateway must cover this exact amount.
+    const gw = await pickGateway(amount)
+    if (!gw) {
+      return NextResponse.json({
+        success: false,
+        message: 'No payment gateway available for this amount right now. Please try again shortly.',
+      })
     }
 
-    // No gateway configured yet — do NOT fake a payment URL.
+    const merchantOrderId = newMerchantOrderId()
+    const origin = siteOrigin(req)
+    const emailUser = user.username.toLowerCase().replace(/[^a-z0-9]/g, '') || 'wpuser'
+
+    // Deposit record = settlement vehicle. Even if the gateway call fails the
+    // intent stays for audit; the signed callback credits the wallet on success.
+    const deposit = await db.deposit.create({
+      data: {
+        userId,
+        gatewayId: gw.id,
+        merchantOrderId,
+        amount: Math.round(amount * 100) / 100,
+        status: 'pending',
+      },
+    })
+
+    await db.order.update({
+      where: { id: order.id },
+      data: { merchantOrderId },
+    })
+
+    const res = await createCollectionOrder({
+      gw,
+      merchantOrderId,
+      amount,
+      customerName: user.username,
+      customerPhone: user.mobile,
+      customerEmail: `${emailUser}@watchpay.app`,
+      returnUrl: origin,
+      notifyUrl: `${origin}/api/deposit/notify?gw=${gw.id}`,
+    })
+
+    if (!res.ok || !res.paymentUrl) {
+      await db.deposit.update({
+        where: { id: deposit.id },
+        data: { status: 'failed', qwackOrderId: res.qwackOrderId ?? '' },
+      })
+      return NextResponse.json({
+        success: false,
+        message: res.message || 'Payment gateway rejected the order. Please try again.',
+      })
+    }
+
+    await db.deposit.update({
+      where: { id: deposit.id },
+      data: { qwackOrderId: res.qwackOrderId ?? '' },
+    })
+
     return NextResponse.json({
-      success: false,
-      message: 'Payment gateway is not connected yet. Your order was received, but no payment can be processed in this demo.',
+      success: true,
+      payment_url: res.paymentUrl,
+      order_id: merchantOrderId,
+      gateway: gw.label,
     })
   } catch {
     return NextResponse.json(

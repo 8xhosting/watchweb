@@ -5,6 +5,7 @@ import {
   newMerchantOrderId,
   pickGateway,
   reconcileDeposit,
+  siteOrigin,
 } from '@/lib/qwackpay'
 
 /**
@@ -14,14 +15,6 @@ import {
  * GET  /api/deposit?order=X  → deposit status (reconciles with gateway when pending)
  * GET  /api/deposit?latest=1 → latest deposit of the session user
  */
-
-function siteOrigin(req: Request): string {
-  const envUrl = process.env.NEXT_PUBLIC_SITE_URL ?? process.env.SITE_URL
-  if (envUrl) return envUrl.replace(/\/+$/, '')
-  const proto = req.headers.get('x-forwarded-proto') ?? 'https'
-  const host = req.headers.get('x-forwarded-host') ?? req.headers.get('host') ?? 'localhost:3000'
-  return `${proto}://${host}`
-}
 
 export async function POST(req: Request) {
   const userId = getUserIdFromRequest(req)

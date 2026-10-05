@@ -9,9 +9,10 @@ import { ProfilePage } from './ProfilePage'
 import { TaskPage } from './TaskPage'
 import { TeamPage } from './TeamPage'
 import { WithdrawPage } from './WithdrawPage'
+import { DepositPage } from './DepositPage'
 import { MaintenanceScreen } from './MaintenanceScreen'
 
-export type AppView = BottomNavTab | 'task' | 'withdraw'
+export type AppView = BottomNavTab | 'task' | 'withdraw' | 'deposit'
 
 interface LiveConfig {
   maintenance: boolean
@@ -180,11 +181,13 @@ export function AppShell({
           {view === 'task' && <TaskPage onBack={goProfile} onGoHome={goHome} />}
 
           {view === 'withdraw' && <WithdrawPage username={username} balance={balance} onBack={goProfile} />}
+
+          {view === 'deposit' && <DepositPage username={username} balance={balance} onBack={goProfile} />}
         </div>
       )}
 
       <BottomNav
-        active={view === 'task' || view === 'withdraw' ? 'profile' : view}
+        active={view === 'task' || view === 'withdraw' || view === 'deposit' ? 'profile' : view}
         onNavigate={onNavigate}
       />
     </>

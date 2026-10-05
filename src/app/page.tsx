@@ -516,17 +516,18 @@ const VIEW_HASH: Record<View, string> = {
   profile: '#/profile',
   task: '#/task',
   withdraw: '#/withdraw',
+  deposit: '#/deposit',
   admin: '#/admin',
 }
 
 /** views that require a valid session */
 const AUTHED_VIEWS: ReadonlySet<View> = new Set([
-  'home', 'team', 'orders', 'profile', 'task', 'withdraw',
+  'home', 'team', 'orders', 'profile', 'task', 'withdraw', 'deposit',
 ])
 
 /** type guard — narrows View to the authenticated AppView subset */
 function isAppView(v: View): v is AppView {
-  return v === 'home' || v === 'team' || v === 'orders' || v === 'profile' || v === 'task' || v === 'withdraw'
+  return v === 'home' || v === 'team' || v === 'orders' || v === 'profile' || v === 'task' || v === 'withdraw' || v === 'deposit'
 }
 
 function viewFromHash(hash: string): View | null {
@@ -551,6 +552,8 @@ function viewFromHash(hash: string): View | null {
       return 'task'
     case '#/withdraw':
       return 'withdraw'
+    case '#/deposit':
+      return 'deposit'
     case '#/admin':
       return 'admin'
     default:

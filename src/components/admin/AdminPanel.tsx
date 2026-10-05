@@ -10,8 +10,9 @@ import { AdminControl } from './AdminControl'
 import { AdminAnalytics } from './AdminAnalytics'
 import { AdminLedger } from './AdminLedger'
 import { AdminSecurity } from './AdminSecurity'
+import { AdminGateways } from './AdminGateways'
 
-type Section = 'dashboard' | 'analytics' | 'users' | 'orders' | 'withdrawals' | 'ledger' | 'security' | 'control'
+type Section = 'dashboard' | 'analytics' | 'users' | 'orders' | 'withdrawals' | 'gateways' | 'ledger' | 'security' | 'control'
 
 const NAV: Array<{ key: Section; label: string; sub: string; icon: string }> = [
   {
@@ -43,6 +44,12 @@ const NAV: Array<{ key: Section; label: string; sub: string; icon: string }> = [
     label: 'Payouts',
     sub: 'Withdrawal queue',
     icon: 'M12 3v12 m-5-5 5 5 5-5 M5 21h14',
+  },
+  {
+    key: 'gateways',
+    label: 'Gateways',
+    sub: 'QwackPay · keys · deposits',
+    icon: 'M2 5h20v14H2z M2 10h20 M6 15h4',
   },
   {
     key: 'ledger',
@@ -303,6 +310,7 @@ export function AdminPanel() {
           {section === 'users' && <AdminUsers />}
           {section === 'orders' && <AdminOrders />}
           {section === 'withdrawals' && <AdminWithdrawals />}
+          {section === 'gateways' && <AdminGateways />}
           {section === 'ledger' && <AdminLedger />}
           {section === 'security' && <AdminSecurity />}
           {section === 'control' && <AdminControl onMaintenanceChange={setMaintenance} />}

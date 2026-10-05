@@ -23,6 +23,7 @@ model User {
   orders       Order[]
   withdrawals  Withdrawal[]
   transactions Transaction[]
+  deposits     Deposit[]
 }
 
 // Payment orders — persisted when the user taps PAY on a live order.
@@ -95,6 +96,53 @@ model Transaction {
   @@index([createdAt])
   @@index([type])
   @@index([userId])
+}
+
+// Payment gateways (QwackPay & co.) — ADMIN-managed. The SAME merchant can be
+// added MULTIPLE times with different API keys (key rotation / load split).
+// Every active gateway participates in weighted routing for user deposits.
+model PaymentGateway {
+  id          String   @id @default(auto()) @map("_id") @db.ObjectId
+  label       String // display name, e.g. "QwackPay #1"
+  provider    String   @default("qwackpay")
+  merchantId  String // merchant number, e.g. 681551699 — NOT unique (multi-key!)
+  apiKey      String // docking key from the merchant backend (secret)
+  apiUrl      String   @default("https://qwackpay.com/api/v1")
+  payinRate   Float    @default(7.0) // collection rate %
+  payoutRate  Float    @default(3.0) // payment rate %
+  payoutFlat  Float    @default(6) // payment flat fee ₹
+  minAmount   Float    @default(100)
+  maxAmount   Float    @default(100000)
+  weight      Int      @default(1) // routing weight (1..10) — higher = more traffic
+  active      Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  deposits Deposit[]
+
+  @@index([active])
+}
+
+// Deposit (money-in) orders through a payment gateway.
+// Balance is credited ONLY on a signature-verified success callback/query.
+model Deposit {
+  id              String   @id @default(auto()) @map("_id") @db.ObjectId
+  userId          String   @db.ObjectId
+  user            User     @relation(fields: [userId], references: [id])
+  gatewayId       String?  @db.ObjectId
+  gateway         PaymentGateway? @relation(fields: [gatewayId], references: [id])
+  merchantOrderId String   @unique
+  qwackOrderId    String   @default("")
+  amount          Float
+  fee             Float    @default(0)
+  utr             String   @default("")
+  status          String   @default("pending") // pending | success | failed
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@index([userId])
+  @@index([status])
+  @@index([gatewayId])
 }
 
 // Admin audit trail — every master-control action lands here.

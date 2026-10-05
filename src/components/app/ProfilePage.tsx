@@ -5,6 +5,7 @@ import { CountUp } from '@/components/ui/count-up'
 import { ProgressRing } from '@/components/ui/progress-ring'
 import {
   IconArrowDownToLine,
+  IconArrowUpDown,
   IconCheckSquare,
   IconChevronRight,
   IconCrown,
@@ -44,7 +45,7 @@ export function ProfilePage({
   light: boolean
   onToggleLight: () => void
   onBack: () => void
-  onNavigate: (view: 'team' | 'orders' | 'task' | 'withdraw') => void
+  onNavigate: (view: 'team' | 'orders' | 'task' | 'withdraw' | 'deposit') => void
   onLogout: () => void
 }) {
   const { toast } = useToast()
@@ -58,6 +59,13 @@ export function ProfilePage({
   const strength = Math.min(100, 40 + teamSize * 5 + (mobile ? 15 : 0) + (memberSince ? 10 : 0))
 
   const menu = [
+    {
+      key: 'deposit',
+      label: 'Add Money',
+      sub: 'Instant UPI · Card · NetBanking',
+      icon: <IconArrowUpDown className="h-[18px] w-[18px]" />,
+      action: () => onNavigate('deposit'),
+    },
     {
       key: 'task',
       label: 'My Tasks',
@@ -136,14 +144,24 @@ export function ProfilePage({
             </p>
           </div>
         </div>
-        <button
-          type="button"
-          onClick={() => onNavigate('withdraw')}
-          className="flex h-10 shrink-0 items-center gap-1.5 rounded-xl bg-gradient-to-b from-[#2BF5A6] via-[#00D084] to-[#00B978] px-4 text-[12.5px] font-extrabold text-white shadow-[0_10px_22px_-8px_rgba(0,208,132,0.7),inset_0_1px_0_rgba(255,255,255,0.35)] transition-all duration-200 hover:-translate-y-px hover:brightness-[1.06] active:translate-y-0 active:scale-[0.97]"
-        >
-          <IconArrowDownToLine className="h-4 w-4" />
-          Withdraw
-        </button>
+        <div className="flex shrink-0 items-center gap-1.5">
+          <button
+            type="button"
+            onClick={() => onNavigate('deposit')}
+            className="flex h-10 items-center gap-1.5 rounded-xl border border-emerald-400/40 bg-emerald-400/10 px-3.5 text-[12.5px] font-extrabold text-[var(--wp-accent-text)] transition-all duration-200 hover:-translate-y-px hover:bg-emerald-400/20 active:translate-y-0 active:scale-[0.97]"
+          >
+            <IconArrowUpDown className="h-4 w-4" />
+            Add
+          </button>
+          <button
+            type="button"
+            onClick={() => onNavigate('withdraw')}
+            className="flex h-10 items-center gap-1.5 rounded-xl bg-gradient-to-b from-[#2BF5A6] via-[#00D084] to-[#00B978] px-4 text-[12.5px] font-extrabold text-white shadow-[0_10px_22px_-8px_rgba(0,208,132,0.7),inset_0_1px_0_rgba(255,255,255,0.35)] transition-all duration-200 hover:-translate-y-px hover:brightness-[1.06] active:translate-y-0 active:scale-[0.97]"
+          >
+            <IconArrowDownToLine className="h-4 w-4" />
+            Withdraw
+          </button>
+        </div>
       </section>
 
       {/* quick stats */}

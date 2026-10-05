@@ -10,6 +10,7 @@ import { db } from '@/lib/db'
  *   withdrawal_hold   — payout requested, amount held from the wallet
  *   withdrawal_paid   — payout finalised by the admin
  *   withdrawal_refund — payout rejected, hold released back to the wallet
+ *   deposit           — money added via a payment gateway (QwackPay)
  *
  * Fire-and-forget safe: a ledger failure must NEVER break the money
  * movement it records (same philosophy as adminLog).
@@ -21,6 +22,7 @@ export type TxType =
   | 'withdrawal_hold'
   | 'withdrawal_paid'
   | 'withdrawal_refund'
+  | 'deposit'
 
 export function recordTx(data: {
   userId?: string | null
@@ -52,4 +54,5 @@ export const TX_LABELS: Record<TxType, string> = {
   withdrawal_hold: 'Payout Hold',
   withdrawal_paid: 'Payout Paid',
   withdrawal_refund: 'Payout Refund',
+  deposit: 'Gateway Deposit',
 }

@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import { LiveOrdersHome } from '@/components/home/LiveOrdersHome'
+import { HomeHeader } from '@/components/home/HomeHeader'
 import { BottomNav, type BottomNavTab } from '@/components/home/BottomNav'
 import { OrdersPage } from './OrdersPage'
 import { ProfilePage } from './ProfilePage'
@@ -92,27 +93,43 @@ export function AppShell({
         />
       )}
 
-      {view === 'team' && <TeamPage username={username} onBack={goHome} />}
+      {/* Non-home screens share the exact same compact top bar as Home
+          (hamburger • WATCHPAY • wallet chip • theme toggle) so the whole
+          app reads as one product. Pages keep their own PageHeader row for
+          back + title, and pb-28 clears the fixed BottomNav. */}
+      {view !== 'home' && (
+        <div className="flex flex-col gap-3 pb-28">
+          <HomeHeader
+            balance={balance}
+            light={light}
+            username={username}
+            onToggleLight={onToggleLight}
+            onLogout={onLogout}
+          />
 
-      {view === 'orders' && <OrdersPage username={username} onBack={goHome} />}
+          {view === 'team' && <TeamPage username={username} onBack={goHome} />}
 
-      {view === 'profile' && (
-        <ProfilePage
-          username={username}
-          mobile={mobile}
-          memberSince={memberSince}
-          balance={balance}
-          light={light}
-          onToggleLight={onToggleLight}
-          onBack={goHome}
-          onNavigate={(v) => onNavigate(v)}
-          onLogout={onLogout}
-        />
+          {view === 'orders' && <OrdersPage username={username} onBack={goHome} />}
+
+          {view === 'profile' && (
+            <ProfilePage
+              username={username}
+              mobile={mobile}
+              memberSince={memberSince}
+              balance={balance}
+              light={light}
+              onToggleLight={onToggleLight}
+              onBack={goHome}
+              onNavigate={(v) => onNavigate(v)}
+              onLogout={onLogout}
+            />
+          )}
+
+          {view === 'task' && <TaskPage onBack={goProfile} onGoHome={goHome} />}
+
+          {view === 'withdraw' && <WithdrawPage username={username} balance={balance} onBack={goProfile} />}
+        </div>
       )}
-
-      {view === 'task' && <TaskPage onBack={goProfile} onGoHome={goHome} />}
-
-      {view === 'withdraw' && <WithdrawPage username={username} balance={balance} onBack={goProfile} />}
 
       <BottomNav
         active={view === 'task' || view === 'withdraw' ? 'profile' : view}

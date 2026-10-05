@@ -911,7 +911,10 @@ export default function WatchPayAuth() {
           )}
 
           {/* ============================ HEADER ============================ */}
-          {!booting && view !== 'home' && (
+          {/* Big brand logo only on the auth screens (register/otp/success/
+              login). Authenticated app views render the compact home-style
+              top bar from AppShell instead. */}
+          {!booting && !isAppView(view) && (
             <header className="relative mb-4 flex flex-col items-center">
               <button
                 type="button"

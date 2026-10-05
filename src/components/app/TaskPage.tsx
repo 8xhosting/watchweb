@@ -2,6 +2,7 @@
 
 import { useState } from 'react'
 import { useToast } from '@/hooks/use-toast'
+import { ProgressRing } from '@/components/ui/progress-ring'
 import {
   IconBolt,
   IconCheckCircle,
@@ -23,9 +24,8 @@ const TASK_ICON = {
 }
 
 /**
- * Tasks — daily task list with progress, check-in streak and rewards.
- * Interactive states are local UI only (real task completion will be
- * validated server-side once the tasks API is connected).
+ * Tasks — ADVANCED: animated progress ring, glowing streak row, task cards
+ * with per-task progress and a pop-in CLAIMED state.
  */
 export function TaskPage({ onBack, onGoHome }: { onBack: () => void; onGoHome: () => void }) {
   const { toast } = useToast()
@@ -59,45 +59,36 @@ export function TaskPage({ onBack, onGoHome }: { onBack: () => void; onGoHome: (
         }
       />
 
-      {/* daily progress */}
-      <section className="relative overflow-hidden rounded-2xl border border-[var(--wp-border)] bg-[var(--wp-card)] p-4 shadow-[var(--wp-shadow-card)] backdrop-blur-xl">
+      {/* daily progress — animated ring */}
+      <section className="wp-rise relative overflow-hidden rounded-2xl border border-[var(--wp-border)] bg-[var(--wp-card)] p-4 shadow-[var(--wp-shadow-card)] backdrop-blur-xl">
         <span
           aria-hidden="true"
           className="absolute -right-10 -top-12 h-28 w-28 rounded-full bg-emerald-400/15 blur-2xl"
         />
-        <div className="flex items-end justify-between gap-3">
-          <div>
+        <div className="flex items-center gap-4">
+          <ProgressRing percent={progress} size={88} stroke={8} label={`${totalDone}/${DAILY_TASKS.length}`} sub="done" />
+          <div className="min-w-0 flex-1">
             <p className="text-[10.5px] font-bold uppercase tracking-[0.16em] text-[var(--wp-muted-2)]">
               Today&apos;s progress
             </p>
-            <p className="mt-1 text-[22px] font-extrabold leading-none text-[var(--wp-heading)]">
-              {totalDone}/{DAILY_TASKS.length}{' '}
-              <span className="text-[13px] font-bold text-[var(--wp-muted)]">tasks done</span>
+            <p className="mt-1 text-[21px] font-extrabold leading-none text-[var(--wp-heading)]">
+              ₹{inr(rewardEarned)}
+              <span className="text-[12px] font-bold text-[var(--wp-muted)]"> / ₹{inr(totalReward)} earned</span>
+            </p>
+            <p className="mt-1.5 text-[10.5px] leading-relaxed text-[var(--wp-muted)]">
+              {totalDone === DAILY_TASKS.length
+                ? 'All tasks complete — see you tomorrow!'
+                : `${DAILY_TASKS.length - totalDone} task(s) left to max today's rewards.`}
             </p>
           </div>
-          <p className="text-right">
-            <span className="block text-[9.5px] font-bold uppercase tracking-[0.14em] text-[var(--wp-muted-2)]">
-              Earned
-            </span>
-            <span className="text-[19px] font-extrabold tabular-nums text-[var(--wp-accent-text)]">
-              ₹{inr(rewardEarned)}
-              <span className="text-[11.5px] font-bold text-[var(--wp-muted)]"> / ₹{inr(totalReward)}</span>
-            </span>
-          </p>
-        </div>
-        <div className="mt-3 h-2 overflow-hidden rounded-full bg-[var(--wp-chip)]">
-          <div
-            className="h-full rounded-full bg-gradient-to-r from-[#2BF5A6] to-[#00B978] shadow-[0_0_10px_rgba(0,208,132,0.6)] transition-all duration-500"
-            style={{ width: `${progress}%` }}
-          />
         </div>
       </section>
 
       {/* check-in streak */}
-      <section className="rounded-2xl border border-[var(--wp-border)] bg-[var(--wp-card)] p-3.5 shadow-[var(--wp-shadow-card)] backdrop-blur-xl">
+      <section className="wp-rise rounded-2xl border border-[var(--wp-border)] bg-[var(--wp-card)] p-3.5 shadow-[var(--wp-shadow-card)] backdrop-blur-xl" style={{ animationDelay: '60ms' }}>
         <div className="flex items-center justify-between gap-2">
           <h2 className="text-[13.5px] font-extrabold text-[var(--wp-heading)]">Weekly Streak</h2>
-          <span className="rounded-md border border-amber-400/40 bg-amber-400/10 px-1.5 py-0.5 text-[10px] font-extrabold text-amber-600 dark:text-amber-300">
+          <span className="wp-glow-amber rounded-md border border-amber-400/40 bg-amber-400/10 px-1.5 py-0.5 text-[10px] font-extrabold text-amber-600 dark:text-amber-300">
             🔥 4-day streak
           </span>
         </div>
@@ -105,7 +96,7 @@ export function TaskPage({ onBack, onGoHome }: { onBack: () => void; onGoHome: (
           {STREAK_DAYS.map((d) => (
             <div
               key={d.day}
-              className={`flex flex-col items-center gap-1 rounded-xl border py-2 ${
+              className={`flex flex-col items-center gap-1 rounded-xl border py-2 transition-transform duration-200 hover:scale-[1.04] ${
                 d.claimed
                   ? 'border-emerald-400/40 bg-emerald-400/10'
                   : 'border-[var(--wp-border)] bg-[var(--wp-chip)]'
@@ -132,13 +123,14 @@ export function TaskPage({ onBack, onGoHome }: { onBack: () => void; onGoHome: (
 
       {/* task list */}
       <section className="flex flex-col gap-2">
-        {DAILY_TASKS.map((t) => {
+        {DAILY_TASKS.map((t, i) => {
           const isClaimed = t.done >= t.target || claimed[t.id]
           const pct = Math.min(100, Math.round((t.done / t.target) * 100))
           return (
             <article
               key={t.id}
-              className="relative overflow-hidden rounded-2xl border border-[var(--wp-border)] bg-[var(--wp-card)] p-3.5 pl-4 shadow-[var(--wp-shadow-card)] backdrop-blur-xl"
+              className="wp-rise relative overflow-hidden rounded-2xl border border-[var(--wp-border)] bg-[var(--wp-card)] p-3.5 pl-4 shadow-[var(--wp-shadow-card)] backdrop-blur-xl"
+              style={{ animationDelay: `${Math.min(i * 55, 300)}ms` }}
             >
               <span
                 aria-hidden="true"
@@ -179,7 +171,7 @@ export function TaskPage({ onBack, onGoHome }: { onBack: () => void; onGoHome: (
                       </div>
                       <div className="mt-1 h-1.5 overflow-hidden rounded-full bg-[var(--wp-chip)]">
                         <div
-                          className="h-full rounded-full bg-gradient-to-r from-[#2BF5A6] to-[#00B978]"
+                          className="h-full rounded-full bg-gradient-to-r from-[#2BF5A6] to-[#00B978] transition-all duration-700"
                           style={{ width: `${pct}%` }}
                         />
                       </div>
@@ -190,7 +182,7 @@ export function TaskPage({ onBack, onGoHome }: { onBack: () => void; onGoHome: (
 
               <div className="mt-2.5 flex items-center justify-end gap-2">
                 {isClaimed ? (
-                  <span className="flex h-9 items-center gap-1.5 rounded-xl border border-emerald-400/40 bg-emerald-400/10 px-4 text-[11.5px] font-extrabold text-emerald-600 dark:text-emerald-300">
+                  <span className="wp-pop flex h-9 items-center gap-1.5 rounded-xl border border-emerald-400/40 bg-emerald-400/10 px-4 text-[11.5px] font-extrabold text-emerald-600 dark:text-emerald-300">
                     <IconCheckCircle className="h-3.5 w-3.5" />
                     CLAIMED
                   </span>

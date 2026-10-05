@@ -9,13 +9,20 @@ import { ProfilePage } from './ProfilePage'
 import { TaskPage } from './TaskPage'
 import { TeamPage } from './TeamPage'
 import { WithdrawPage } from './WithdrawPage'
+import { MaintenanceScreen } from './MaintenanceScreen'
 
 export type AppView = BottomNavTab | 'task' | 'withdraw'
 
+interface LiveConfig {
+  maintenance: boolean
+  announcement: string
+}
+
 /**
  * Authenticated app shell — owns the shared wallet polling (one 5s poll for
- * every screen), the logged-in profile details and the page switch.
- * Home keeps its full live-orders engine; all other pages are lightweight.
+ * every screen), the logged-in profile details, the page switch and the
+ * MASTER CONTROL link (app-config poll → maintenance mode + announcement
+ * banner pushed live from the admin panel).
  */
 export function AppShell({
   view,
@@ -35,6 +42,7 @@ export function AppShell({
   const [balance, setBalance] = useState(0)
   const [mobile, setMobile] = useState<string | null>(null)
   const [memberSince, setMemberSince] = useState<string | null>(null)
+  const [config, setConfig] = useState<LiveConfig>({ maintenance: false, announcement: '' })
 
   /* wallet every ~5s — shared by Home header, Profile and Withdraw */
   useEffect(() => {
@@ -78,8 +86,51 @@ export function AppShell({
     }
   }, [])
 
+  /* master control link — poll app config every 15s so the admin panel can
+     push maintenance mode + announcements to every device live */
+  useEffect(() => {
+    let cancelled = false
+    const load = async () => {
+      try {
+        const res = await fetch('/api/app-config', { cache: 'no-store' })
+        if (!res.ok) return
+        const data = await res.json()
+        if (cancelled || !data?.ok) return
+        setConfig({
+          maintenance: Boolean(data.maintenance),
+          announcement: typeof data.announcement === 'string' ? data.announcement : '',
+        })
+      } catch {
+        // keep last known config
+      }
+    }
+    void load()
+    const t = setInterval(load, 15000)
+    return () => {
+      cancelled = true
+      clearInterval(t)
+    }
+  }, [])
+
   const goHome = () => onNavigate('home')
   const goProfile = () => onNavigate('profile')
+
+  /* MAINTENANCE MODE — block every user screen (admin panel is unaffected:
+     it renders outside AppShell with its own gate) */
+  if (config.maintenance) {
+    return (
+      <>
+        <HomeHeader
+          balance={balance}
+          light={light}
+          username={username}
+          onToggleLight={onToggleLight}
+          onLogout={onLogout}
+        />
+        <MaintenanceScreen light={light} />
+      </>
+    )
+  }
 
   return (
     <>
@@ -90,6 +141,7 @@ export function AppShell({
           light={light}
           onToggleLight={onToggleLight}
           onLogout={onLogout}
+          announcement={config.announcement}
         />
       )}
 

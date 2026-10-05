@@ -70,6 +70,7 @@ export function LiveOrdersHome({
   light,
   onToggleLight,
   onLogout,
+  announcement = '',
 }: {
   username: string
   /** wallet balance (polled centrally by AppShell) */
@@ -77,6 +78,8 @@ export function LiveOrdersHome({
   light: boolean
   onToggleLight: () => void
   onLogout: () => void
+  /** live broadcast from the Admin Master Control panel (may be empty) */
+  announcement?: string
 }) {
   const { toast } = useToast()
 
@@ -363,6 +366,24 @@ export function LiveOrdersHome({
         onToggleLight={onToggleLight}
         onLogout={onLogout}
       />
+      {announcement.trim() ? (
+        <section
+          role="status"
+          aria-label="Announcement"
+          className="wp-rise relative flex items-center gap-2.5 overflow-hidden rounded-2xl border border-emerald-400/30 bg-gradient-to-r from-emerald-400/[0.12] via-emerald-400/[0.06] to-transparent px-3.5 py-2.5 shadow-[0_0_24px_-12px_rgba(0,208,132,0.6)] backdrop-blur-xl"
+        >
+          <span className="grid h-7 w-7 shrink-0 place-items-center rounded-lg bg-gradient-to-b from-[#2BF5A6] to-[#00B978] text-[#04120C] shadow-[0_6px_14px_-4px_rgba(0,208,132,0.7)]">
+            <svg viewBox="0 0 24 24" className="h-3.5 w-3.5" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+              <path d="m3 11 18-5v12L3 14v-3z" />
+              <path d="M11.6 16.8a3 3 0 1 1-5.8-1.6" />
+            </svg>
+          </span>
+          <p className="min-w-0 flex-1 text-[11.5px] font-bold leading-snug text-[var(--wp-text)]">
+            {announcement.trim()}
+          </p>
+          <span className="wp-live-dot h-1.5 w-1.5 shrink-0 rounded-full bg-[#00D084]" />
+        </section>
+      ) : null}
       <WithdrawalTicker />
       <SortBar active={sortLow} onToggle={() => setSortLow((v) => !v)} />
       <LiveOrdersHeader activeCount={activeCount} />

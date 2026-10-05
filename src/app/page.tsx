@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState, type FormEvent, type ReactNode } from 'react'
 import { useToast } from '@/hooks/use-toast'
 import { AppShell, type AppView } from '@/components/app/AppShell'
+import { AdminPanel } from '@/components/admin/AdminPanel'
 
 /* ------------------------------------------------------------------ */
 /*  Inline SVG icon set (Lucide-style strokes, zero dependencies)      */
@@ -498,7 +499,7 @@ const MOBILE_RE = /^\d{10}$/
 type FieldKey = 'username' | 'mobile' | 'password' | 'confirm'
 type FormValues = Record<FieldKey, string>
 type FormErrors = Partial<Record<FieldKey, string>>
-type View = 'register' | 'otp' | 'success' | 'login' | AppView
+type View = 'register' | 'otp' | 'success' | 'login' | AppView | 'admin'
 
 /* ------------------------------------------------------------------ */
 /*  Hash routing — example.com/#/login, /#/home, /#/team, /#/orders …   */
@@ -515,6 +516,7 @@ const VIEW_HASH: Record<View, string> = {
   profile: '#/profile',
   task: '#/task',
   withdraw: '#/withdraw',
+  admin: '#/admin',
 }
 
 /** views that require a valid session */
@@ -549,6 +551,8 @@ function viewFromHash(hash: string): View | null {
       return 'task'
     case '#/withdraw':
       return 'withdraw'
+    case '#/admin':
+      return 'admin'
     default:
       return null
   }
@@ -655,17 +659,24 @@ export default function WatchPayAuth() {
       if (username) {
         setLoggedInUser(username)
         // honour deep links straight into any authed tab (team, orders…)
+        // — the admin panel has its OWN gate, so it is allowed for anyone
         const target: View =
-          initial && AUTHED_VIEWS.has(initial) ? initial : 'home'
+          initial === 'admin'
+            ? 'admin'
+            : initial && AUTHED_VIEWS.has(initial)
+              ? initial
+              : 'home'
         setView(target)
         if (window.location.hash !== VIEW_HASH[target]) {
           window.location.hash = VIEW_HASH[target]
         }
         return
       }
-      // guest: honour register/login deep links, everything else → register
+      // guest: honour register/login/admin deep links, everything else → register
       if (initial === 'login') {
         setView('login')
+      } else if (initial === 'admin') {
+        setView('admin')
       } else if (window.location.hash !== VIEW_HASH.register) {
         window.location.hash = VIEW_HASH.register
       }
@@ -882,6 +893,21 @@ export default function WatchPayAuth() {
 
   const primaryBtn =
     'group relative mt-1 flex h-[56px] w-full items-center justify-center gap-2.5 overflow-hidden rounded-[14px] bg-gradient-to-b from-[#2BF5A6] via-[#00D084] to-[#00B978] text-[16px] font-bold text-white shadow-[0_16px_38px_-8px_rgba(0,208,132,0.6),inset_0_1px_0_rgba(255,255,255,0.4)] transition-all duration-200 hover:-translate-y-0.5 hover:shadow-[0_20px_48px_-8px_rgba(0,208,132,0.75),inset_0_1px_0_rgba(255,255,255,0.4)] hover:brightness-[1.05] focus-visible:outline-none focus-visible:shadow-[0_0_0_3px_rgba(0,208,132,0.3)] active:translate-y-0 active:scale-[0.985] disabled:cursor-not-allowed disabled:opacity-80'
+
+  /* ====================== ADMIN MASTER CONTROL ====================== */
+  /* The ops console renders FULL-WIDTH (no 390px phone frame) with its
+     own gate, sidebar and sections. It ignores the user light theme —
+     control rooms run dark. */
+  if (!booting && view === 'admin') {
+    return (
+      <main className="wp-app relative min-h-svh overflow-x-hidden bg-[var(--wp-bg)] text-[var(--wp-text)]">
+        <AmbientBackground light={false} />
+        <div className="relative z-10">
+          <AdminPanel />
+        </div>
+      </main>
+    )
+  }
 
   const formattedMobile = `${values.mobile.slice(0, 5)} ${values.mobile.slice(5)}`.trim()
 

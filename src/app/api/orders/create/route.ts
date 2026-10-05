@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server'
 import { db } from '@/lib/db'
 import { getUserIdFromRequest } from '@/lib/session'
-import { AMOUNT_MAX, AMOUNT_MIN } from '@/lib/order-rules'
+import { AMOUNT_MAX, AMOUNT_MIN, calcBonus } from '@/lib/order-rules'
 
 /**
  * POST /api/orders/create
@@ -57,6 +57,28 @@ export async function POST(req: Request) {
         { status: 401 }
       )
     }
+
+    // Persist the payment intent so the Admin Master Control panel sees the
+    // REAL order flow (users with banned accounts cannot create orders).
+    const account = await db.user.findUnique({
+      where: { id: userId },
+      select: { status: true },
+    })
+    if (account?.status === 'banned') {
+      return NextResponse.json(
+        { success: false, message: 'Your account has been suspended. Contact support.' },
+        { status: 403 }
+      )
+    }
+    await db.order.create({
+      data: {
+        userId,
+        amount,
+        bonus: calcBonus(amount),
+        platform: branchName,
+        status: 'processing',
+      },
+    })
 
     const gatewayUrl = process.env.PAYMENT_API_URL
     if (gatewayUrl) {

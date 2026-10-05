@@ -1,6 +1,8 @@
 'use client'
 
 import { useToast } from '@/hooks/use-toast'
+import { CountUp } from '@/components/ui/count-up'
+import { ProgressRing } from '@/components/ui/progress-ring'
 import {
   IconArrowDownToLine,
   IconCheckSquare,
@@ -20,9 +22,9 @@ import { buildTeam } from './data'
 const inr = (v: number) => v.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
 
 /**
- * Profile — identity card, wallet shortcut, quick stats and the full
- * settings menu (tasks / withdraw / team / history / appearance / support /
- * logout). Balance is the real DB value polled by AppShell.
+ * Profile — ADVANCED: identity card with account-strength ring, wallet card
+ * with animated balance, VIP progress, quick stats and the full settings
+ * menu. Balance is the REAL DB value polled by AppShell.
  */
 export function ProfilePage({
   username,
@@ -51,6 +53,9 @@ export function ProfilePage({
   const maskedMobile = mobile
     ? `+91 ••••• ${(mobile.slice(-5)).replace(/\d(?=\d{2})/g, '•')}`
     : '+91 ••••• •••'
+
+  /* account strength — how complete/engaged the account is (UI metric) */
+  const strength = Math.min(100, 40 + teamSize * 5 + (mobile ? 15 : 0) + (memberSince ? 10 : 0))
 
   const menu = [
     {
@@ -87,8 +92,8 @@ export function ProfilePage({
     <div className="flex flex-col gap-3">
       <PageHeader title="Profile" subtitle="Account & settings" onBack={onBack} />
 
-      {/* identity card */}
-      <section className="relative overflow-hidden rounded-2xl border border-[var(--wp-border)] bg-[var(--wp-card)] p-4 shadow-[var(--wp-shadow-card)] backdrop-blur-xl">
+      {/* identity card + strength ring */}
+      <section className="wp-rise relative overflow-hidden rounded-2xl border border-[var(--wp-border)] bg-[var(--wp-card)] p-4 shadow-[var(--wp-shadow-card)] backdrop-blur-xl">
         <span
           aria-hidden="true"
           className="absolute -right-12 -top-12 h-32 w-32 rounded-full bg-emerald-400/15 blur-2xl"
@@ -102,7 +107,7 @@ export function ProfilePage({
               <p className="truncate text-[18px] font-extrabold leading-tight text-[var(--wp-heading)]">
                 {username}
               </p>
-              <span className="flex shrink-0 items-center gap-0.5 rounded-md border border-amber-400/40 bg-amber-400/10 px-1.5 py-0.5 text-[9px] font-black uppercase tracking-wide text-amber-600 dark:text-amber-300">
+              <span className="wp-glow-amber flex shrink-0 items-center gap-0.5 rounded-md border border-amber-400/40 bg-amber-400/10 px-1.5 py-0.5 text-[9px] font-black uppercase tracking-wide text-amber-600 dark:text-amber-300">
                 <IconCrown className="h-2.5 w-2.5" />
                 VIP
               </span>
@@ -112,11 +117,12 @@ export function ProfilePage({
               {memberSince ? `Member since ${memberSince}` : 'WatchPay member'}
             </p>
           </div>
+          <ProgressRing percent={strength} size={72} stroke={7} sub="strength" />
         </div>
       </section>
 
       {/* wallet card */}
-      <section className="flex items-center justify-between gap-3 rounded-2xl border border-emerald-400/25 bg-[var(--wp-card)] p-3.5 shadow-[0_0_24px_-10px_rgba(0,208,132,0.55),var(--wp-shadow-card)] backdrop-blur-xl">
+      <section className="wp-rise flex items-center justify-between gap-3 rounded-2xl border border-emerald-400/25 bg-[var(--wp-card)] p-3.5 shadow-[0_0_24px_-10px_rgba(0,208,132,0.55),var(--wp-shadow-card)] backdrop-blur-xl" style={{ animationDelay: '60ms' }}>
         <div className="flex items-center gap-3">
           <span className="grid h-10 w-10 place-items-center rounded-xl bg-gradient-to-b from-[#2BF5A6] to-[#00B978] text-[#04120C] shadow-[0_6px_16px_-4px_rgba(0,208,132,0.6)]">
             <IconWallet className="h-[18px] w-[18px]" />
@@ -125,8 +131,8 @@ export function ProfilePage({
             <p className="text-[9.5px] font-bold uppercase tracking-[0.14em] text-[var(--wp-muted-2)]">
               Wallet balance
             </p>
-            <p aria-live="polite" className="text-[19px] font-extrabold tabular-nums leading-tight text-[var(--wp-heading)]">
-              ₹ {inr(balance)}
+            <p aria-live="polite" className="text-[19px] font-extrabold leading-tight text-[var(--wp-heading)]">
+              <CountUp value={balance} prefix="₹ " decimals={2} />
             </p>
           </div>
         </div>
@@ -141,17 +147,19 @@ export function ProfilePage({
       </section>
 
       {/* quick stats */}
-      <section className="grid grid-cols-3 gap-2">
+      <section className="wp-rise grid grid-cols-3 gap-2" style={{ animationDelay: '100ms' }}>
         {[
-          { label: 'Tasks Done', value: '24' },
-          { label: 'Team Size', value: String(teamSize) },
-          { label: 'VIP Level', value: '1' },
+          { label: 'Tasks Done', value: 24 },
+          { label: 'Team Size', value: teamSize },
+          { label: 'VIP Level', value: 1 },
         ].map((s) => (
           <div
             key={s.label}
-            className="rounded-2xl border border-[var(--wp-border)] bg-[var(--wp-card)] p-2.5 text-center shadow-[var(--wp-shadow-card)] backdrop-blur-xl"
+            className="rounded-2xl border border-[var(--wp-border)] bg-[var(--wp-card)] p-2.5 text-center shadow-[var(--wp-shadow-card)] backdrop-blur-xl transition-transform duration-200 hover:-translate-y-0.5"
           >
-            <p className="text-[15px] font-extrabold tabular-nums text-[var(--wp-heading)]">{s.value}</p>
+            <p className="text-[15px] font-extrabold text-[var(--wp-heading)]">
+              <CountUp value={s.value} />
+            </p>
             <p className="mt-0.5 text-[9.5px] font-semibold uppercase tracking-[0.12em] text-[var(--wp-muted-2)]">
               {s.label}
             </p>
@@ -159,8 +167,30 @@ export function ProfilePage({
         ))}
       </section>
 
+      {/* VIP progress */}
+      <section className="wp-rise rounded-2xl border border-[var(--wp-border)] bg-[var(--wp-card)] p-3.5 shadow-[var(--wp-shadow-card)] backdrop-blur-xl" style={{ animationDelay: '130ms' }}>
+        <div className="flex items-center justify-between gap-2">
+          <div className="flex items-center gap-2">
+            <IconCrown className="h-4 w-4 text-amber-500 dark:text-amber-400" />
+            <h2 className="text-[13.5px] font-extrabold text-[var(--wp-heading)]">VIP Level 1</h2>
+          </div>
+          <span className="text-[10px] font-bold text-[var(--wp-muted-2)]">
+            24/40 tasks to <span className="text-amber-500 dark:text-amber-300">VIP 2</span>
+          </span>
+        </div>
+        <div className="mt-2.5 h-2 overflow-hidden rounded-full bg-white/[0.06]">
+          <div
+            className="h-full rounded-full bg-gradient-to-r from-amber-300 via-amber-400 to-amber-500 shadow-[0_0_10px_rgba(250,204,21,0.5)] transition-all duration-700"
+            style={{ width: '60%' }}
+          />
+        </div>
+        <p className="mt-2 text-[10px] leading-relaxed text-[var(--wp-muted)]">
+          VIP 2 unlocks a 2% withdrawal bonus and priority support queues.
+        </p>
+      </section>
+
       {/* menu */}
-      <section className="overflow-hidden rounded-2xl border border-[var(--wp-border)] bg-[var(--wp-card)] shadow-[var(--wp-shadow-card)] backdrop-blur-xl">
+      <section className="wp-rise overflow-hidden rounded-2xl border border-[var(--wp-border)] bg-[var(--wp-card)] shadow-[var(--wp-shadow-card)] backdrop-blur-xl" style={{ animationDelay: '160ms' }}>
         {menu.map((item, i) => (
           <button
             key={item.key}

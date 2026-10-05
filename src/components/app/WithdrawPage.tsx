@@ -1,7 +1,8 @@
 'use client'
 
-import { useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import { useToast } from '@/hooks/use-toast'
+import { CountUp } from '@/components/ui/count-up'
 import {
   IconArrowDownToLine,
   IconBank,
@@ -11,21 +12,35 @@ import {
   IconWallet,
 } from '@/components/home/icons'
 import { PageHeader } from './PageHeader'
-import { buildWithdrawHistory, WITHDRAW_MIN } from './data'
+import { WITHDRAW_MIN } from './data'
 
-const inr = (v: number) => v.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
 const inrWhole = (v: number) => v.toLocaleString('en-IN')
 
 const QUICK = [500, 1000, 2000, 5000]
 
 type Method = 'upi' | 'bank'
 
+interface WdRecord {
+  id: string
+  amount: number
+  method: string
+  status: string
+  when: string
+}
+
+function whenLabel(iso: string): string {
+  const d = new Date(iso)
+  const today = new Date()
+  const sameDay = d.toDateString() === today.toDateString()
+  const time = d.toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' })
+  if (sameDay) return `Today, ${time}`
+  return `${d.toLocaleDateString('en-IN', { day: 'numeric', month: 'short' })}, ${time}`
+}
+
 /**
- * Withdraw — balance hero (real DB balance via AppShell), amount entry with
- * quick chips, UPI/bank method selection and recent payout history.
- *
- * The submit button validates locally and reports honestly: the payout
- * gateway is not connected yet, so NO fake success state is ever shown.
+ * Withdraw — ADVANCED + REAL: the submit button creates a genuine payout
+ * request (balance held immediately, refunded if the admin rejects it) and
+ * the history list reads the user's actual records from MongoDB.
  */
 export function WithdrawPage({
   username,
@@ -42,8 +57,24 @@ export function WithdrawPage({
   const [upiId, setUpiId] = useState('')
   const [account, setAccount] = useState('')
   const [ifsc, setIfsc] = useState('')
+  const [submitting, setSubmitting] = useState(false)
+  const [history, setHistory] = useState<WdRecord[] | null>(null)
 
-  const history = buildWithdrawHistory(username)
+  const loadHistory = useCallback(async () => {
+    try {
+      const res = await fetch('/api/withdrawals', { cache: 'no-store' })
+      const data = await res.json().catch(() => null)
+      if (res.ok && data?.ok) setHistory(data.withdrawals as WdRecord[])
+      else setHistory((h) => h ?? [])
+    } catch {
+      setHistory((h) => h ?? [])
+    }
+  }, [])
+
+  useEffect(() => {
+    void loadHistory()
+  }, [loadHistory])
+
   const numAmount = Number(amount)
   const valid =
     Number.isFinite(numAmount) &&
@@ -51,7 +82,8 @@ export function WithdrawPage({
     numAmount <= balance &&
     (method === 'upi' ? /^[\w.\-]{2,}@[a-zA-Z]{2,}$/.test(upiId.trim()) : account.trim().length >= 9 && ifsc.trim().length >= 5)
 
-  function submit() {
+  async function submit() {
+    if (submitting) return
     if (!Number.isFinite(numAmount) || numAmount < WITHDRAW_MIN) {
       toast({
         variant: 'destructive',
@@ -79,11 +111,42 @@ export function WithdrawPage({
       })
       return
     }
-    // Honest state: payout gateway is not wired yet — never fake a payout.
-    toast({
-      title: 'Withdrawals coming soon',
-      description: 'The payout gateway is not connected yet. Your request settings are saved on this device.',
-    })
+
+    setSubmitting(true)
+    try {
+      const res = await fetch('/api/withdrawals', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          amount: numAmount,
+          method,
+          ...(method === 'upi' ? { upiId: upiId.trim() } : { account: account.trim(), ifsc: ifsc.trim() }),
+        }),
+      })
+      const data = await res.json().catch(() => null)
+      if (res.ok && data?.ok) {
+        toast({
+          title: `₹${inrWhole(numAmount)} withdrawal requested`,
+          description: 'The amount is on hold — the team processes payouts every day.',
+        })
+        setAmount('')
+        void loadHistory()
+      } else {
+        toast({
+          variant: 'destructive',
+          title: 'Request failed',
+          description: data?.error ?? 'Please try again in a moment.',
+        })
+      }
+    } catch {
+      toast({
+        variant: 'destructive',
+        title: 'Network error',
+        description: 'Could not reach the payout service. Please try again.',
+      })
+    } finally {
+      setSubmitting(false)
+    }
   }
 
   return (
@@ -99,8 +162,8 @@ export function WithdrawPage({
         }
       />
 
-      {/* balance hero */}
-      <section className="relative overflow-hidden rounded-2xl border border-emerald-400/25 bg-[var(--wp-card)] p-4 text-center shadow-[0_0_30px_-10px_rgba(0,208,132,0.6),var(--wp-shadow-card)] backdrop-blur-xl">
+      {/* balance hero — animated */}
+      <section className="wp-rise relative overflow-hidden rounded-2xl border border-emerald-400/25 bg-[var(--wp-card)] p-4 text-center shadow-[0_0_30px_-10px_rgba(0,208,132,0.6),var(--wp-shadow-card)] backdrop-blur-xl">
         <span
           aria-hidden="true"
           className="absolute -left-10 -top-10 h-28 w-28 rounded-full bg-emerald-400/15 blur-2xl"
@@ -116,7 +179,7 @@ export function WithdrawPage({
           <span className="grid h-8 w-8 place-items-center rounded-full bg-gradient-to-b from-[#2BF5A6] to-[#00B978] text-[#04120C] shadow-[0_6px_16px_-4px_rgba(0,208,132,0.7)]">
             <IconWallet className="h-4 w-4" />
           </span>
-          ₹ {inr(balance)}
+          <CountUp value={balance} prefix="₹ " decimals={2} />
         </p>
         <p className="mt-1.5 text-[10.5px] text-[var(--wp-muted)]">
           Minimum withdrawal ₹{WITHDRAW_MIN} · No processing fee
@@ -124,7 +187,7 @@ export function WithdrawPage({
       </section>
 
       {/* amount + method */}
-      <section className="rounded-2xl border border-[var(--wp-border)] bg-[var(--wp-card)] p-3.5 shadow-[var(--wp-shadow-card)] backdrop-blur-xl">
+      <section className="wp-rise rounded-2xl border border-[var(--wp-border)] bg-[var(--wp-card)] p-3.5 shadow-[var(--wp-shadow-card)] backdrop-blur-xl" style={{ animationDelay: '60ms' }}>
         <label
           htmlFor="wp-withdraw-amount"
           className="text-[11px] font-bold uppercase tracking-[0.14em] text-[var(--wp-muted-2)]"
@@ -273,52 +336,80 @@ export function WithdrawPage({
       {/* CTA */}
       <button
         type="button"
-        onClick={submit}
-        className="flex h-[54px] w-full items-center justify-center gap-2 rounded-[14px] bg-gradient-to-b from-[#2BF5A6] via-[#00D084] to-[#00B978] text-[15px] font-extrabold text-white shadow-[0_16px_38px_-8px_rgba(0,208,132,0.6),inset_0_1px_0_rgba(255,255,255,0.4)] transition-all duration-200 hover:-translate-y-0.5 hover:brightness-[1.05] active:translate-y-0 active:scale-[0.985]"
+        onClick={() => void submit()}
+        disabled={submitting}
+        className="flex h-[54px] w-full items-center justify-center gap-2 rounded-[14px] bg-gradient-to-b from-[#2BF5A6] via-[#00D084] to-[#00B978] text-[15px] font-extrabold text-white shadow-[0_16px_38px_-8px_rgba(0,208,132,0.6),inset_0_1px_0_rgba(255,255,255,0.4)] transition-all duration-200 hover:-translate-y-0.5 hover:brightness-[1.05] active:translate-y-0 active:scale-[0.985] disabled:cursor-not-allowed disabled:opacity-80"
       >
-        <IconArrowDownToLine className="h-[18px] w-[18px]" />
-        Withdraw{numAmount >= WITHDRAW_MIN ? ` ₹${inrWhole(numAmount)}` : ''}
+        {submitting ? (
+          <>
+            <svg viewBox="0 0 24 24" className="h-4 w-4 animate-spin" fill="none" stroke="currentColor" strokeWidth="2.4" aria-hidden="true">
+              <path d="M21 12a9 9 0 1 1-6.219-8.56" />
+            </svg>
+            Requesting…
+          </>
+        ) : (
+          <>
+            <IconArrowDownToLine className="h-[18px] w-[18px]" />
+            Withdraw{numAmount >= WITHDRAW_MIN ? ` ₹${inrWhole(numAmount)}` : ''}
+          </>
+        )}
       </button>
 
-      {/* history */}
-      <section className="rounded-2xl border border-[var(--wp-border)] bg-[var(--wp-card)] p-3.5 shadow-[var(--wp-shadow-card)] backdrop-blur-xl">
+      {/* history — REAL records */}
+      <section className="wp-rise rounded-2xl border border-[var(--wp-border)] bg-[var(--wp-card)] p-3.5 shadow-[var(--wp-shadow-card)] backdrop-blur-xl" style={{ animationDelay: '100ms' }}>
         <h2 className="text-[13.5px] font-extrabold text-[var(--wp-heading)]">Recent Withdrawals</h2>
-        <ul className="mt-1.5 flex flex-col divide-y divide-[var(--wp-border)]">
-          {history.map((w) => (
-            <li key={w.id} className="flex items-center gap-3 py-2.5">
-              <span
-                className={`grid h-9 w-9 shrink-0 place-items-center rounded-xl border ${
-                  w.status === 'paid'
-                    ? 'border-emerald-400/30 bg-emerald-400/10 text-emerald-600 dark:text-emerald-300'
-                    : 'border-amber-400/35 bg-amber-400/10 text-amber-600 dark:text-amber-300'
-                }`}
-              >
-                {w.status === 'paid' ? (
-                  <IconCheckCircle className="h-4 w-4" />
-                ) : (
-                  <IconClock className="h-4 w-4" />
-                )}
-              </span>
-              <div className="min-w-0 flex-1">
-                <p className="text-[13px] font-extrabold tabular-nums text-[var(--wp-heading)]">
-                  ₹ {inrWhole(w.amount)}
-                </p>
-                <p className="text-[10px] text-[var(--wp-muted-2)]">
-                  {w.method} · {w.when}
-                </p>
-              </div>
-              <span
-                className={`shrink-0 rounded-md border px-1.5 py-0.5 text-[9.5px] font-extrabold uppercase tracking-wide ${
-                  w.status === 'paid'
-                    ? 'border-emerald-400/40 bg-emerald-400/10 text-emerald-600 dark:text-emerald-300'
-                    : 'border-amber-400/45 bg-amber-400/10 text-amber-600 dark:text-amber-300'
-                }`}
-              >
-                {w.status}
-              </span>
-            </li>
-          ))}
-        </ul>
+        {history === null ? (
+          <div className="mt-2 flex flex-col gap-2" aria-busy="true">
+            {Array.from({ length: 2 }, (_, i) => (
+              <div key={i} className="wp-shimmer h-12 rounded-xl border border-white/[0.05]" />
+            ))}
+          </div>
+        ) : history.length === 0 ? (
+          <p className="mt-3 rounded-xl border border-dashed border-[var(--wp-border-strong)] py-6 text-center text-[11.5px] text-[var(--wp-muted)]">
+            No withdrawals yet — your requests and their status will appear here.
+          </p>
+        ) : (
+          <ul className="mt-1.5 flex flex-col divide-y divide-[var(--wp-border)]">
+            {history.map((w) => (
+              <li key={w.id} className="wp-rise flex items-center gap-3 py-2.5">
+                <span
+                  className={`grid h-9 w-9 shrink-0 place-items-center rounded-xl border ${
+                    w.status === 'paid'
+                      ? 'border-emerald-400/30 bg-emerald-400/10 text-emerald-600 dark:text-emerald-300'
+                      : w.status === 'rejected'
+                        ? 'border-red-400/30 bg-red-400/10 text-red-400'
+                        : 'border-amber-400/35 bg-amber-400/10 text-amber-600 dark:text-amber-300'
+                  }`}
+                >
+                  {w.status === 'paid' ? (
+                    <IconCheckCircle className="h-4 w-4" />
+                  ) : (
+                    <IconClock className="h-4 w-4" />
+                  )}
+                </span>
+                <div className="min-w-0 flex-1">
+                  <p className="text-[13px] font-extrabold tabular-nums text-[var(--wp-heading)]">
+                    ₹ {inrWhole(w.amount)}
+                  </p>
+                  <p className="text-[10px] text-[var(--wp-muted-2)]">
+                    {w.method.toUpperCase()} · {whenLabel(w.when)}
+                  </p>
+                </div>
+                <span
+                  className={`shrink-0 rounded-md border px-1.5 py-0.5 text-[9.5px] font-extrabold uppercase tracking-wide ${
+                    w.status === 'paid'
+                      ? 'border-emerald-400/40 bg-emerald-400/10 text-emerald-600 dark:text-emerald-300'
+                      : w.status === 'rejected'
+                        ? 'border-red-400/40 bg-red-400/10 text-red-400'
+                        : 'border-amber-400/45 bg-amber-400/10 text-amber-600 dark:text-amber-300'
+                  }`}
+                >
+                  {w.status}
+                </span>
+              </li>
+            ))}
+          </ul>
+        )}
       </section>
     </div>
   )

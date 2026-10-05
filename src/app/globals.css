@@ -469,6 +469,63 @@ input {
   animation: wp-live-pulse 1.6s ease-in-out infinite;
 }
 
+/* ============ ADVANCED UI — staggered rise for sections/cards ======= */
+@keyframes wp-rise {
+  0% {
+    opacity: 0;
+    transform: translateY(14px) scale(0.985);
+  }
+  100% {
+    opacity: 1;
+    transform: none;
+  }
+}
+.wp-rise {
+  animation: wp-rise 0.55s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+/* admin bar-chart grow-up */
+@keyframes wp-bar-grow {
+  from {
+    transform: scaleY(0);
+  }
+  to {
+    transform: scaleY(1);
+  }
+}
+.wp-bar-grow {
+  transform-origin: bottom;
+  animation: wp-bar-grow 0.7s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+/* progress ring sweep (SVG stroke) */
+@keyframes wp-ring {
+  from {
+    stroke-dashoffset: var(--ring-c, 260);
+  }
+}
+.wp-ring-anim {
+  animation: wp-ring 1.1s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+/* soft glow pulse for VIP / streak highlights */
+@keyframes wp-glow-pulse {
+  0%,
+  100% {
+    box-shadow:
+      0 0 0 1px rgba(250, 204, 21, 0.25),
+      0 0 18px -6px rgba(250, 204, 21, 0.4);
+  }
+  50% {
+    box-shadow:
+      0 0 0 1px rgba(250, 204, 21, 0.45),
+      0 0 26px -4px rgba(250, 204, 21, 0.65);
+  }
+}
+.wp-glow-amber {
+  animation: wp-glow-pulse 2.2s ease-in-out infinite;
+}
+
 /* glowing lightning artwork */
 @keyframes wp-bolt-glow {
   0%,
@@ -489,7 +546,11 @@ input {
   .wp-live-dot,
   .wp-bolt,
   .wp-soldout-card,
-  .wp-shimmer {
+  .wp-shimmer,
+  .wp-rise,
+  .wp-bar-grow,
+  .wp-ring-anim,
+  .wp-glow-amber {
     animation: none;
   }
   .wp-order-in-right,

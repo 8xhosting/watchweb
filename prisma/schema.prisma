@@ -15,6 +15,69 @@ model User {
   mobile        String   @unique // 10-digit Indian mobile number
   password      String   // scrypt hash in "salt:hash" format (never plain text)
   walletBalance Float    @default(0) // real balance shown in home header wallet (starts at 0)
+  status        String   @default("active") // "active" | "banned" (admin master control)
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
+
+  orders      Order[]
+  withdrawals Withdrawal[]
+}
+
+// Payment orders — persisted when the user taps PAY on a live order.
+// Live-feed orders are ephemeral (generated); these are REAL payment intents.
+model Order {
+  id        String   @id @default(auto()) @map("_id") @db.ObjectId
+  userId    String   @db.ObjectId
+  user      User     @relation(fields: [userId], references: [id])
+  amount    Float
+  bonus     Float    @default(0)
+  platform  String // branch_name — 1Win / Stake / …
+  status    String   @default("processing") // processing | completed | expired
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([userId])
+  @@index([status])
+  @@index([createdAt])
+}
+
+// Withdrawal requests — created by the user, processed by the admin.
+// Balance is DEDUCTED immediately on request (hold) and refunded on reject.
+model Withdrawal {
+  id          String   @id @default(auto()) @map("_id") @db.ObjectId
+  userId      String   @db.ObjectId
+  user        User     @relation(fields: [userId], references: [id])
+  amount      Float
+  method      String // "upi" | "bank"
+  destination String // UPI id or "account • IFSC"
+  status      String   @default("pending") // pending | paid | rejected
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([userId])
+  @@index([status])
+  @@index([createdAt])
+}
+
+// Global app configuration — ONE document (key = "global"), edited live
+// from the Admin Master Control panel (bonus %, maintenance, announcement…).
+model AppSetting {
+  id           String   @id @default("global") @map("_id")
+  bonusPercent Float    @default(12.5)
+  orderMin     Float    @default(700)
+  orderMax     Float    @default(9000)
+  maintenance  Boolean  @default(false)
+  announcement String   @default("")
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+}
+
+// Admin audit trail — every master-control action lands here.
+model AdminLog {
+  id        String   @id @default(auto()) @map("_id") @db.ObjectId
+  action    String // e.g. "user.ban", "withdrawal.paid", "settings.update"
+  detail    String   @default("")
+  createdAt DateTime @default(now())
+
+  @@index([createdAt])
 }

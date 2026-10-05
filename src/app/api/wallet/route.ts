@@ -1,5 +1,4 @@
 import { NextResponse } from 'next/server'
-import { Prisma } from '@prisma/client'
 import { db } from '@/lib/db'
 import { getUserIdFromRequest } from '@/lib/session'
 
@@ -9,10 +8,8 @@ import { getUserIdFromRequest } from '@/lib/session'
  * The home page polls this roughly every 5 seconds (same cadence as the
  * old get-wallet.php) without ever reloading the page.
  *
- * Uses a parameterized raw query for the balance read — resilient to a dev
- * server process holding a Prisma Client generated before the walletBalance
- * field existed (a plain findUnique({ select: { walletBalance }}) would
- * throw "unknown field" there).
+ * Uses the standard Prisma Client API (works on the MongoDB connector —
+ * raw SQL queries are not available there).
  *
  * When the real get-wallet.php backend is connected, point the client at it —
  * this route intentionally never invents a balance.
@@ -24,21 +21,15 @@ export async function GET(req: Request) {
       return NextResponse.json({ ok: false, error: 'Not authenticated' }, { status: 401 })
     }
 
-    // Confirm the account exists (works on any generated client version).
-    const exists = await db.user.findUnique({
+    const user = await db.user.findUnique({
       where: { id: userId },
-      select: { id: true },
+      select: { walletBalance: true },
     })
-    if (!exists) {
+    if (!user) {
       return NextResponse.json({ ok: false, error: 'Not authenticated' }, { status: 401 })
     }
 
-    const rows = await db.$queryRaw<{ walletBalance: number }[]>(
-      Prisma.sql`SELECT walletBalance FROM User WHERE id = ${userId} LIMIT 1`
-    )
-    const balance = rows.length > 0 ? Number(rows[0].walletBalance) : 0
-
-    return NextResponse.json({ ok: true, balance })
+    return NextResponse.json({ ok: true, balance: Number(user.walletBalance) })
   } catch {
     return NextResponse.json(
       { ok: false, error: 'Something went wrong. Please try again.' },

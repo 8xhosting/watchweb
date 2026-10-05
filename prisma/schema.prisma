@@ -3,13 +3,14 @@ generator client {
 }
 
 datasource db {
-  provider = "sqlite"
+  provider = "mongodb"
   url      = env("DATABASE_URL")
 }
 
-// WatchPay users — registration data saved after OTP verification
+// WatchPay users — registration data saved after OTP verification.
+// MongoDB (Atlas): ids are ObjectIds mapped to String, collection = "User".
 model User {
-  id            String   @id @default(cuid())
+  id            String   @id @default(auto()) @map("_id") @db.ObjectId
   username      String   @unique
   mobile        String   @unique // 10-digit Indian mobile number
   password      String   // scrypt hash in "salt:hash" format (never plain text)
